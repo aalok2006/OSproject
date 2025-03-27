@@ -7,7 +7,7 @@
     <style>
         body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f4f4; }
         .memory-container { display: flex; justify-content: center; gap: 20px; margin-top: 20px; }
-        .memory-section { width: 200px; padding: 10px; background: white; border-radius: 10px; box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1); }
+        .memory-section { width: 250px; padding: 10px; background: white; border-radius: 10px; box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1); }
         .block { width: 100%; height: 30px; margin: 5px 0; text-align: center; line-height: 30px; border-radius: 5px; cursor: pointer; transition: opacity 0.5s ease, background-color 0.5s ease; }
         .in-use { background-color: #4CAF50; color: white; }
         .free { background-color: #ccc; }
@@ -15,7 +15,7 @@
         .swap { background-color: lightcoral; }
         .highlight { background-color: yellow !important; }
         button { margin: 10px; padding: 10px; }
-        #log { margin-top: 20px; padding: 10px; background: #fff; border-radius: 10px; box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1); height: 150px; overflow-y: auto; text-align: left; }
+        #log { margin-top: 20px; padding: 10px; background: #fff; border-radius: 10px; box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1); height: 200px; overflow-y: auto; text-align: left; }
     </style>
 </head>
 <body>
@@ -30,28 +30,29 @@
     <div class="memory-container">
         <div class="memory-section">
             <h3>Main Memory (RAM)</h3>
-            <div id="ram" class="block in-use">RAM: </div>
+            <div id="ram"></div>
         </div>
         <div class="memory-section">
             <h3>Swap Space</h3>
-            <div id="swap" class="block swap">Swap: </div>
+            <div id="swap"></div>
         </div>
         <div class="memory-section">
             <h3>Cache</h3>
-            <div id="cache" class="block cache">Cache: </div>
+            <div id="cache"></div>
         </div>
     </div>
     <div id="log"><strong>System Log:</strong><br></div>
-    
+
     <script>
         let ram = [];
         let swap = [];
         let cache = new Set();
-        const ramSize = 3;
-        const swapSize = 3;
+        let ramSize = 4;
+        let swapSize = 4;
+        let processCounter = 1;
 
         function allocatePage() {
-            let pageId = Math.floor(Math.random() * 10) + 1;
+            let pageId = `P${processCounter++}`;
             if (ram.length < ramSize) {
                 ram.push(pageId);
                 logEvent(`Page ${pageId} allocated to RAM.`);
@@ -59,7 +60,7 @@
                 let removed = ram.shift();
                 if (swap.length < swapSize) {
                     swap.push(removed);
-                    logEvent(`Page ${removed} moved to swap.`);
+                    logEvent(`Page ${removed} moved to Swap.`);
                 }
                 ram.push(pageId);
                 logEvent(`Page ${pageId} allocated to RAM.`);
@@ -69,16 +70,28 @@
 
         function accessPage() {
             let pageId = prompt("Enter page number to access:");
-            if (ram.includes(parseInt(pageId))) {
+            if (ram.includes(pageId)) {
                 highlightBlock("ram");
                 logEvent(`Page ${pageId} accessed in RAM.`);
+            } else if (swap.includes(pageId)) {
+                logEvent(`Page ${pageId} found in Swap. Simulating disk access...`);
+                setTimeout(() => {
+                    if (ram.length < ramSize) {
+                        ram.push(pageId);
+                        swap.splice(swap.indexOf(pageId), 1);
+                        logEvent(`Page ${pageId} moved from Swap to RAM.`);
+                    } else {
+                        logEvent(`Page ${pageId} could not be loaded due to RAM full.`);
+                    }
+                    updateDisplay();
+                }, 1000); // Simulated disk access delay
             } else {
-                logEvent(`Page fault! Page ${pageId} not found in RAM.`);
+                logEvent(`Page fault! Page ${pageId} not found in RAM or Swap.`);
             }
         }
 
         function addToCache() {
-            let pageId = Math.floor(Math.random() * 10) + 1;
+            let pageId = `P${Math.floor(Math.random() * 10) + 1}`;
             if (cache.size >= 3) {
                 let removed = Array.from(cache)[0];
                 cache.delete(removed);
@@ -98,9 +111,9 @@
         function simulatePageReplacement() {
             if (ram.length > 0) {
                 let replacedPage = ram.shift();
-                let newPage = Math.floor(Math.random() * 10) + 1;
+                let newPage = `P${Math.floor(Math.random() * 10) + 1}`;
                 ram.push(newPage);
-                logEvent(`Page Replacement: Removed ${replacedPage}, Loaded ${newPage}.`);
+                logEvent(`LRU Algorithm: Replaced Page ${replacedPage} with ${newPage}.`);
                 updateDisplay();
             } else {
                 logEvent("No pages in RAM to replace.");
@@ -108,14 +121,14 @@
         }
 
         function updateDisplay() {
-            document.getElementById("ram").innerText = "RAM: " + ram.join(", ");
-            document.getElementById("swap").innerText = "Swap: " + swap.join(", ");
-            document.getElementById("cache").innerText = "Cache: " + Array.from(cache).join(", ");
+            document.getElementById("ram").innerHTML = ram.map(p => `<div class="block in-use">${p}</div>`).join("");
+            document.getElementById("swap").innerHTML = swap.map(p => `<div class="block swap">${p}</div>`).join("");
+            document.getElementById("cache").innerHTML = Array.from(cache).map(p => `<div class="block cache">${p}</div>`).join("");
         }
 
         function logEvent(message) {
             let logDiv = document.getElementById("log");
-            logDiv.innerHTML += message + "<br>";
+            logDiv.innerHTML += `${new Date().toLocaleTimeString()} - ${message}<br>`;
             logDiv.scrollTop = logDiv.scrollHeight;
         }
 
@@ -126,6 +139,8 @@
                 element.classList.remove("highlight");
             }, 500);
         }
+
+        updateDisplay();
     </script>
 </body>
 </html>
