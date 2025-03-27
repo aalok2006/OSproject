@@ -21,11 +21,11 @@
 <body>
     <h1>Hybrid Virtual Memory Manager</h1>
     <div>
-        <button onclick="allocatePage()">Allocate Page</button>
-        <button onclick="accessPage()">Access Page</button>
+        <button onclick="allocateProcess()">Allocate Process</button>
+        <button onclick="accessProcess()">Access Process</button>
         <button onclick="addToCache()">Add to Cache</button>
         <button onclick="clearCache()">Clear Cache</button>
-        <button onclick="simulatePageReplacement()">Simulate Page Replacement</button>
+        <button onclick="simulatePageReplacement()">Simulate Process Replacement</button>
     </div>
     <div class="memory-container">
         <div class="memory-section">
@@ -47,58 +47,67 @@
         let ram = [];
         let swap = [];
         let cache = new Set();
+        let processPool = Array.from({ length: 20 }, (_, i) => `P${i + 1}`);
         let ramSize = 4;
         let swapSize = 4;
-        let processCounter = 1;
 
-        function allocatePage() {
-            let pageId = `P${processCounter++}`;
+        function getRandomProcess() {
+            return processPool[Math.floor(Math.random() * processPool.length)];
+        }
+
+        function allocateProcess() {
+            let process = getRandomProcess();
+            if (ram.includes(process) || swap.includes(process)) {
+                logEvent(`Process ${process} is already allocated.`);
+                return;
+            }
+
             if (ram.length < ramSize) {
-                ram.push(pageId);
-                logEvent(`Page ${pageId} allocated to RAM.`);
+                ram.push(process);
+                logEvent(`Process ${process} allocated to RAM.`);
             } else {
                 let removed = ram.shift();
                 if (swap.length < swapSize) {
                     swap.push(removed);
-                    logEvent(`Page ${removed} moved to Swap.`);
+                    logEvent(`Process ${removed} moved to Swap.`);
                 }
-                ram.push(pageId);
-                logEvent(`Page ${pageId} allocated to RAM.`);
+                ram.push(process);
+                logEvent(`Process ${process} allocated to RAM.`);
             }
             updateDisplay();
         }
 
-        function accessPage() {
-            let pageId = prompt("Enter page number to access:");
-            if (ram.includes(pageId)) {
+        function accessProcess() {
+            let process = prompt("Enter process (P1-P20) to access:");
+            if (ram.includes(process)) {
                 highlightBlock("ram");
-                logEvent(`Page ${pageId} accessed in RAM.`);
-            } else if (swap.includes(pageId)) {
-                logEvent(`Page ${pageId} found in Swap. Simulating disk access...`);
+                logEvent(`Process ${process} accessed in RAM.`);
+            } else if (swap.includes(process)) {
+                logEvent(`Process ${process} found in Swap. Simulating disk access...`);
                 setTimeout(() => {
                     if (ram.length < ramSize) {
-                        ram.push(pageId);
-                        swap.splice(swap.indexOf(pageId), 1);
-                        logEvent(`Page ${pageId} moved from Swap to RAM.`);
+                        ram.push(process);
+                        swap.splice(swap.indexOf(process), 1);
+                        logEvent(`Process ${process} moved from Swap to RAM.`);
                     } else {
-                        logEvent(`Page ${pageId} could not be loaded due to RAM full.`);
+                        logEvent(`Process ${process} could not be loaded due to RAM full.`);
                     }
                     updateDisplay();
                 }, 1000); // Simulated disk access delay
             } else {
-                logEvent(`Page fault! Page ${pageId} not found in RAM or Swap.`);
+                logEvent(`Page fault! Process ${process} not found in RAM or Swap.`);
             }
         }
 
         function addToCache() {
-            let pageId = `P${Math.floor(Math.random() * 10) + 1}`;
+            let process = getRandomProcess();
             if (cache.size >= 3) {
                 let removed = Array.from(cache)[0];
                 cache.delete(removed);
-                logEvent(`Page ${removed} removed from cache.`);
+                logEvent(`Process ${removed} removed from cache.`);
             }
-            cache.add(pageId);
-            logEvent(`Page ${pageId} added to cache.`);
+            cache.add(process);
+            logEvent(`Process ${process} added to cache.`);
             updateDisplay();
         }
 
@@ -110,13 +119,16 @@
 
         function simulatePageReplacement() {
             if (ram.length > 0) {
-                let replacedPage = ram.shift();
-                let newPage = `P${Math.floor(Math.random() * 10) + 1}`;
-                ram.push(newPage);
-                logEvent(`LRU Algorithm: Replaced Page ${replacedPage} with ${newPage}.`);
+                let replacedProcess = ram.shift();
+                let newProcess = getRandomProcess();
+                while (ram.includes(newProcess) || swap.includes(newProcess)) {
+                    newProcess = getRandomProcess();
+                }
+                ram.push(newProcess);
+                logEvent(`LRU Algorithm: Replaced Process ${replacedProcess} with ${newProcess}.`);
                 updateDisplay();
             } else {
-                logEvent("No pages in RAM to replace.");
+                logEvent("No processes in RAM to replace.");
             }
         }
 
