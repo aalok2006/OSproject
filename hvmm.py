@@ -1,50 +1,60 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
+from flask import Flask, render_template
+from flask_socketio import SocketIO, emit
+import random
+import eventlet
+
+eventlet.monkey_patch()  
 
 app = Flask(__name__)
-CORS(app)  # Allow cross-origin requests (for frontend)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 ram = []
 swap = []
 cache = set()
-RAM_SIZE = 3
-SWAP_SIZE = 3
-CACHE_SIZE = 3
+ram_size = 3
+swap_size = 3
 
-@app.route('/allocate', methods=['POST'])
+@app.route("/")
+def index():
+    return render_template("hvmm.html")
+
+@socketio.on("allocate_page")
 def allocate_page():
     global ram, swap
-    page_id = request.json.get("pageId")
-
-    if len(ram) < RAM_SIZE:
+    page_id = random.randint(1, 10)
+    
+    if len(ram) < ram_size:
         ram.append(page_id)
     else:
-        removed = ram.pop(0)  # Remove oldest page from RAM
-        if len(swap) < SWAP_SIZE:
+        removed = ram.pop(0)
+        if len(swap) < swap_size:
             swap.append(removed)
         ram.append(page_id)
+        emit("log_message", f"Page {removed} moved to swap.")
 
-    return jsonify({"ram": ram, "swap": swap, "cache": list(cache)})
+    emit("update_memory", {"ram": ram, "swap": swap, "cache": list(cache)}, broadcast=True)
 
-@app.route('/access', methods=['POST'])
-def access_page():
-    page_id = request.json.get("pageId")
-
+@socketio.on("access_page")
+def access_page(data):
+    page_id = int(data["page_id"])
     if page_id in ram:
-        return jsonify({"message": f"Page {page_id} accessed in RAM.", "status": "hit"})
+        emit("log_message", f"Page {page_id} accessed in RAM.")
     else:
-        return jsonify({"message": f"Page fault! Page {page_id} not found in RAM.", "status": "miss"})
+        emit("log_message", f"Page fault! Page {page_id} not found in RAM.")
 
-@app.route('/cache', methods=['POST'])
+@socketio.on("add_to_cache")
 def add_to_cache():
     global cache
-    page_id = request.json.get("pageId")
-
-    if len(cache) >= CACHE_SIZE:
-        cache.pop()  # Remove oldest cached item
-
+    page_id = random.randint(1, 10)
+    
+    if len(cache) >= 3:
+        removed = list(cache)[0]
+        cache.remove(removed)
+        emit("log_message", f"Page {removed} removed from cache.")
+    
     cache.add(page_id)
-    return jsonify({"ram": ram, "swap": swap, "cache": list(cache)})
+    emit("log_message", f"Page {page_id} added to cache.")
+    emit("update_memory", {"ram": ram, "swap": swap, "cache": list(cache)}, broadcast=True)
 
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == "__main__":
+    socketio.run(app, debug=True, host="0.0.0.0", port=5000)
