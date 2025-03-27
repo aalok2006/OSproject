@@ -24,6 +24,8 @@
         <button onclick="allocatePage()">Allocate Page</button>
         <button onclick="accessPage()">Access Page</button>
         <button onclick="addToCache()">Add to Cache</button>
+        <button onclick="clearCache()">Clear Cache</button>
+        <button onclick="simulatePageReplacement()">Simulate Page Replacement</button>
     </div>
     <div class="memory-container">
         <div class="memory-section">
@@ -85,6 +87,24 @@
             cache.add(pageId);
             logEvent(`Page ${pageId} added to cache.`);
             updateDisplay();
+        }
+
+        function clearCache() {
+            cache.clear();
+            logEvent("Cache cleared.");
+            updateDisplay();
+        }
+
+        function simulatePageReplacement() {
+            if (ram.length > 0) {
+                let replacedPage = ram.shift();
+                let newPage = Math.floor(Math.random() * 10) + 1;
+                ram.push(newPage);
+                logEvent(`Page Replacement: Removed ${replacedPage}, Loaded ${newPage}.`);
+                updateDisplay();
+            } else {
+                logEvent("No pages in RAM to replace.");
+            }
         }
 
         function updateDisplay() {
