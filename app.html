@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hybrid Virtual Memory Manager</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        .memory-container { display: flex; justify-content: center; margin-top: 20px; }
+        .block { width: 100px; height: 50px; margin: 10px; line-height: 50px; border-radius: 5px; }
+        .ram { background-color: lightblue; }
+        .swap { background-color: lightcoral; }
+        .cache { background-color: lightgreen; }
+        button { margin: 10px; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Hybrid Virtual Memory Manager</h1>
+    <div>
+        <button onclick="allocatePage()">Allocate Page</button>
+        <button onclick="accessPage()">Access Page</button>
+        <button onclick="addToCache()">Add to Cache</button>
+    </div>
+    <div class="memory-container">
+        <div id="ram" class="block ram">RAM</div>
+        <div id="swap" class="block swap">Swap</div>
+        <div id="cache" class="block cache">Cache</div>
+    </div>
+
+    <script>
+        const serverURL = "http://127.0.0.1:5000";  // Flask backend URL
+
+        async function allocatePage() {
+            let pageId = Math.floor(Math.random() * 10) + 1;
+            let response = await fetch(`${serverURL}/allocate`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ pageId })
+            });
+
+            let data = await response.json();
+            updateDisplay(data);
+        }
+
+        async function accessPage() {
+            let pageId = prompt("Enter page number to access:");
+            let response = await fetch(`${serverURL}/access`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ pageId: parseInt(pageId) })
+            });
+
+            let data = await response.json();
+            alert(data.message);
+        }
+
+        async function addToCache() {
+            let pageId = Math.floor(Math.random() * 10) + 1;
+            let response = await fetch(`${serverURL}/cache`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ pageId })
+            });
+
+            let data = await response.json();
+            updateDisplay(data);
+        }
+
+        function updateDisplay(data) {
+            document.getElementById("ram").innerText = "RAM: " + data.ram.join(", ");
+            document.getElementById("swap").innerText = "Swap: " + data.swap.join(", ");
+            document.getElementById("cache").innerText = "Cache: " + data.cache.join(", ");
+        }
+    </script>
+</body>
+</html>
