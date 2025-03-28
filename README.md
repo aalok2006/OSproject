@@ -3,8 +3,7 @@
 
 A dynamic, web-based visual simulator demonstrating the principles of a hybrid virtual memory system, including Cache, RAM (Main Memory), and Swap Space, complete with various page replacement algorithms.
 
-**(Optional: Add a GIF/Screenshot here showing the simulator in action)**
-<!-- https://github.com/aalok2006/OS-project/blob/main/Screenshot 2025-03-28 145003.png) -->
+https://github.com/aalok2006/OS-project/blob/main/Screenshot 2025-03-28 145003.png
 
 ## Features 🚀
 
