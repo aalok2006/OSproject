@@ -21,7 +21,6 @@
             --box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             --border-color-light: #444;
         }
-
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             text-align: center;
@@ -30,19 +29,15 @@
             margin: 0;
             padding: 20px 10px;
         }
-
         .main-container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 0 10px;
         }
-
-
         h1 {
             color: var(--primary-color);
             margin-bottom: 25px;
         }
-
         .controls, .config {
             background: var(--surface-color);
             padding: 15px 20px;
@@ -56,12 +51,10 @@
             gap: 12px;
             border: 1px solid var(--border-color-light);
         }
-
         .config label, .controls label {
             margin-right: 5px;
             font-weight: 500;
         }
-
         .memory-container {
             display: flex;
             justify-content: center;
@@ -69,7 +62,6 @@
             gap: 30px;
             margin-top: 25px;
         }
-
         .memory-section {
             width: 280px;
             padding: 15px;
@@ -81,7 +73,6 @@
             align-items: center;
             border: 1px solid var(--border-color-light);
         }
-
         .memory-section h3 {
             margin-top: 0;
             margin-bottom: 10px;
@@ -97,9 +88,8 @@
             color: #b0b0b0;
             margin-bottom: 15px;
          }
-
         .block {
-            width: 90%;
+            width: 100%;
             height: 35px;
             margin: 6px 0;
             text-align: center;
@@ -117,11 +107,9 @@
              border-color: var(--highlight-color);
              box-shadow: 0 0 8px rgba(255, 255, 0, 0.5);
          }
-
         .in-ram { background: linear-gradient(45deg, var(--ram-color-start), var(--ram-color-end)); }
         .in-swap { background: linear-gradient(45deg, var(--swap-color-start), var(--swap-color-end)); }
         .in-cache { background: linear-gradient(45deg, var(--cache-color-start), var(--cache-color-end)); }
-
         .block-highlight {
             animation: highlight-pulse 0.7s 1;
         }
@@ -131,7 +119,6 @@
         .block-fade-in {
             animation: fade-in 0.5s forwards;
         }
-
         @keyframes highlight-pulse {
             0%, 100% { box-shadow: 0 0 5px 2px var(--highlight-color); border-color: var(--highlight-color); }
             50% { box-shadow: 0 0 15px 5px var(--highlight-color); border-color: var(--highlight-color); }
@@ -144,8 +131,6 @@
             from { opacity: 0; transform: scale(0.8); }
             to { opacity: 1; transform: scale(1); }
          }
-
-
         button, select, input[type="number"], input[type="text"] {
             margin: 5px;
             padding: 10px 15px;
@@ -164,13 +149,11 @@
          input[type="text"]#processIdInput {
              width: 90px;
          }
-
          input:focus {
              outline: none;
              border-color: var(--primary-color);
              box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
          }
-
         button:hover {
             background: #4f4f4f;
             border-color: #777;
@@ -179,8 +162,6 @@
             background: #444;
             transform: translateY(1px);
         }
-
-
         #log {
             margin: 30px auto;
             padding: 15px;
@@ -211,7 +192,6 @@
          .log-success { color: #90EE90; }
          .log-info { color: #ADD8E6; }
          .log-warning { color: #FFA500; }
-
         .modal {
             display: none;
             position: fixed;
@@ -226,7 +206,6 @@
             justify-content: center;
             align-items: center;
         }
-
         .modal-content {
             background-color: var(--surface-color);
             margin: auto;
@@ -242,7 +221,6 @@
             max-height: 85vh;
             overflow-y: auto;
         }
-
          .modal-content h2 {
             color: var(--primary-color);
             margin-top: 0;
@@ -269,8 +247,6 @@
              font-size: 0.9em;
              color: #ccc;
          }
-
-
         .close-button {
             color: #aaa;
             position: absolute;
@@ -280,20 +256,21 @@
             font-weight: bold;
             line-height: 1;
         }
-
         .close-button:hover,
         .close-button:focus {
             color: var(--text-color);
             text-decoration: none;
             cursor: pointer;
         }
-
+        .aalok {
+            width: 100%;
+            font-size: 1.2rem;
+        }
     </style>
 </head>
 <body>
     <div class="main-container">
         <h1>Hybrid Virtual Memory Manager</h1>
-
         <div class="config">
             <label for="ramSizeInput">RAM Size:</label>
             <input type="number" id="ramSizeInput" value="4" min="1" max="20">
@@ -304,7 +281,6 @@
             <button onclick="applyConfig()">Apply Config & Reset</button>
             <button id="aboutButton">About</button>
         </div>
-
         <div class="controls">
             <label for="algorithm">Algorithm:</label>
             <select id="algorithm">
@@ -322,28 +298,25 @@
             <button onclick="clearCache()">Clear Cache</button>
             <button onclick="resetSimulation()">Reset Simulation</button>
         </div>
-
         <div class="memory-container">
             <div class="memory-section">
                 <h3>Cache</h3>
                 <div id="cache-usage" class="memory-usage">0/3 Used</div>
-                <div id="cache"></div>
+                <div id="cache" class="aalok"></div>
             </div>
             <div class="memory-section">
                 <h3>Main Memory (RAM)</h3>
                 <div id="ram-usage" class="memory-usage">0/4 Used</div>
-                <div id="ram"></div>
+                <div id="ram" class="aalok"></div>
             </div>
             <div class="memory-section">
                 <h3>Swap Space</h3>
                 <div id="swap-usage" class="memory-usage">0/4 Used</div>
-                <div id="swap"></div>
+                <div id="swap" class="aalok"></div>
             </div>
         </div>
-
         <div id="log"><strong>System Log:</strong><br></div>
     </div>
-
     <div id="aboutModal" class="modal">
       <div class="modal-content">
         <span class="close-button" id="closeModalButton">×</span>
@@ -362,11 +335,9 @@
             <li><strong>Process Information:</strong> Hovering over a process block shows its simulated size and other relevant details (frequency, access/add time).</li>
             <li><strong>System Log:</strong> Records all major events, hits, misses, faults, and errors.</li>
         </ul>
-         <p class="attribution">Made By : AALOK</p>
+         <p class="attribution">Made By : AALOK KUMAR YADAV</p>
       </div>
     </div>
-
-
     <script>
         let ramSize = 4;
         let swapSize = 4;
@@ -374,31 +345,25 @@
         const MAX_PROCESS_ID = 20;
         const MIN_PROCESS_KB = 10;
         const MAX_PROCESS_KB = 834 * 1024;
-
         let ram = [];
         let swap = [];
         let cache = new Map();
-
         let accessOrder = [];
         let accessFrequency = {};
         let ramAddTime = {};
         let processSizes = {};
-
         let processPool = Array.from({ length: MAX_PROCESS_ID }, (_, i) => `P${i + 1}`);
-
         function formatSize(kb) {
             if (kb >= 1024) {
                 return (kb / 1024).toFixed(1) + ' MB';
             }
             return kb + ' KB';
         }
-
         function getRandomInt(min, max) {
              min = Math.ceil(min);
              max = Math.floor(max);
              return Math.floor(Math.random() * (max - min + 1)) + min;
         }
-
         function initSimulation() {
             ram = [];
             swap = [];
@@ -407,22 +372,18 @@
             accessFrequency = {};
             ramAddTime = {};
             processSizes = {};
-
             for (let i = 1; i <= MAX_PROCESS_ID; i++) {
                 const processId = `P${i}`;
                 processSizes[processId] = getRandomInt(MIN_PROCESS_KB, MAX_PROCESS_KB);
             }
-
             logEvent("Simulation initialized.", "info");
             logEvent(`Generated random sizes for ${MAX_PROCESS_ID} processes (Range: ${formatSize(MIN_PROCESS_KB)} - ${formatSize(MAX_PROCESS_KB)}).`, "info");
             updateDisplay();
         }
-
         function applyConfig() {
              const newRamSize = parseInt(document.getElementById('ramSizeInput').value);
              const newSwapSize = parseInt(document.getElementById('swapSizeInput').value);
              const newCacheSize = parseInt(document.getElementById('cacheSizeInput').value);
-
              if (isNaN(newRamSize) || newRamSize < 1 || newRamSize > 20 ||
                  isNaN(newSwapSize) || newSwapSize < 0 || newSwapSize > 20 ||
                  isNaN(newCacheSize) || newCacheSize < 0 || newCacheSize > 10) {
@@ -432,26 +393,20 @@
                   document.getElementById('cacheSizeInput').value = cacheSize;
                   return;
              }
-
              ramSize = newRamSize;
              swapSize = newSwapSize;
              cacheSize = newCacheSize;
-
              logEvent(`Configuration updated: RAM=${ramSize}, Swap=${swapSize}, Cache=${cacheSize}. Resetting simulation.`, "info");
              initSimulation();
         }
-
         function resetSimulation() {
             logEvent("Simulation reset requested.", "info");
             initSimulation();
         }
-
-
         function getProcessIdInput(required = false) {
             const inputElement = document.getElementById('processIdInput');
             let processId = inputElement.value.trim().toUpperCase();
             let usedFallback = false;
-
              if (!processId || !/^P\d+$/.test(processId) ) {
                   if (required) {
                        logEvent(`Valid Process ID required in input field for this action.`, "warning");
@@ -474,7 +429,6 @@
                     processId = available[Math.floor(Math.random() * available.length)];
                     logEvent(`No specific process ID given or invalid. Using random available process: ${processId}`, "info");
                  }
-
              } else {
                  const num = parseInt(processId.substring(1));
                  if (num < 1 || num > MAX_PROCESS_ID) {
@@ -488,34 +442,27 @@
             }
             return processId;
         }
-
-
         function allocateProcess() {
             const processId = getProcessIdInput(false);
             if (!processId) return;
-
             if (ram.includes(processId) || swap.includes(processId) || cache.has(processId)) {
                 logEvent(`Process ${processId} is already in memory (RAM, Swap, or Cache). Cannot allocate again.`, "warning");
                 highlightExistingBlock(processId);
                 return;
             }
-
             logEvent(`Attempting to allocate Process ${processId}...`, "info");
-
             if (ram.length < ramSize) {
                 ram.push(processId);
                 const now = Date.now();
                 accessOrder.push(processId);
                 accessFrequency[processId] = 1;
                 ramAddTime[processId] = now;
-
                 logEvent(`Process ${processId} allocated directly to RAM.`, "success");
                 updateDisplay();
                 highlightBlock(processId, 'ram', 'block-fade-in');
             } else {
                 logEvent(`RAM full. Evicting page using ${document.getElementById("algorithm").value.toUpperCase()} algorithm...`, "warning");
                 const evictedProcessId = evictPage();
-
                 if (evictedProcessId) {
                     let evictedDestination = 'Discarded';
                     if (swap.length < swapSize) {
@@ -526,33 +473,27 @@
                         logEvent(`Process ${evictedProcessId} evicted from RAM. Swap full, page discarded.`, "warning");
                     }
                      cleanUpTrackingData(evictedProcessId);
-
                      ram.push(processId);
                      const now = Date.now();
                      accessOrder.push(processId);
                      accessFrequency[processId] = 1;
                      ramAddTime[processId] = now;
-
                      logEvent(`Process ${processId} allocated to RAM after eviction.`, "success");
                      updateDisplay();
                      highlightBlock(processId, 'ram', 'block-fade-in');
                      if (evictedDestination === 'Swap') {
                         setTimeout(() => highlightBlock(evictedProcessId, 'swap', 'block-highlight'), 100);
                      }
-
                 } else {
                      logEvent(`RAM full, but failed to find a page to evict (RAM might be empty unexpectedly?). Allocation of ${processId} failed.`, "error");
                 }
             }
         }
-
         function accessProcess() {
             const processId = getProcessIdInput(false);
              if (!processId) return;
-
             logEvent(`Attempting to access Process ${processId}...`, "info");
             const now = Date.now();
-
             if (cache.has(processId)) {
                 logEvent(`Cache Hit! Process ${processId} found in Cache.`, "success");
                 const entry = cache.get(processId);
@@ -562,9 +503,7 @@
                 updateDisplay();
                 return;
             }
-
             logEvent(`Cache Miss for ${processId}. Checking RAM...`, "info");
-
             if (ram.includes(processId)) {
                 logEvent(`RAM Hit! Process ${processId} found in RAM.`, "success");
                 updateUsageTracking(processId, now);
@@ -573,27 +512,21 @@
                 updateDisplay();
                 return;
             }
-
             logEvent(`RAM Miss for ${processId}. Checking Swap...`, "info");
-
             if (swap.includes(processId)) {
                 logEvent(`Page Fault! Process ${processId} found in Swap Space. Loading into RAM...`, "warning");
                 handlePageFault(processId, now);
                 return;
             }
-
             logEvent(`Page Fault & Not Found! Process ${processId} not in Cache, RAM, or Swap. Maybe it was terminated or never allocated?`, "error");
         }
-
         function manualAddToCache() {
             const processId = getProcessIdInput(true);
             if (!processId) return;
-
             if (cacheSize <= 0) {
                 logEvent("Cache is disabled (size 0). Cannot add.", "warning");
                 return;
             }
-
             if (cache.has(processId)) {
                  logEvent(`Process ${processId} is already in the cache. Updating access time.`, "info");
                  const entry = cache.get(processId);
@@ -603,7 +536,6 @@
                  updateDisplay();
                  return;
             }
-
             if (ram.includes(processId)) {
                 logEvent(`Process ${processId} found in RAM. Attempting to add to cache manually...`, "info");
                 const now = Date.now();
@@ -616,7 +548,6 @@
                 highlightExistingBlock(processId);
             }
         }
-
         function clearCache() {
             if (cache.size === 0) {
                  logEvent("Cache is already empty.", "info");
@@ -626,42 +557,34 @@
             logEvent("Cache cleared manually.", "info");
             updateDisplay();
         }
-
         function endProcess(processId) {
             logEvent(`Attempting to terminate Process ${processId}...`, "warning");
             let found = false;
-
             const ramIndex = ram.indexOf(processId);
             if (ramIndex > -1) {
                 ram.splice(ramIndex, 1);
                 logEvent(`Process ${processId} removed from RAM.`, "info");
                 found = true;
             }
-
             const swapIndex = swap.indexOf(processId);
             if (swapIndex > -1) {
                 swap.splice(swapIndex, 1);
                 logEvent(`Process ${processId} removed from Swap.`, "info");
                 found = true;
             }
-
             if (cache.has(processId)) {
                 cache.delete(processId);
                 logEvent(`Process ${processId} removed from Cache.`, "info");
                 found = true;
             }
-
             if (found) {
                 cleanUpTrackingData(processId);
                 logEvent(`Process ${processId} terminated successfully.`, "success");
             } else {
                 logEvent(`Process ${processId} not found in RAM, Swap, or Cache. Cannot terminate.`, "error");
             }
-
             updateDisplay();
         }
-
-
         function handlePageFault(processId, accessTime) {
             const swapIndex = swap.indexOf(processId);
             if (swapIndex > -1) {
@@ -672,14 +595,11 @@
                 updateDisplay();
                 return;
             }
-
-
             let evictedProcessId = null;
             let evictedDestination = 'None';
             if (ram.length >= ramSize) {
                 logEvent(`RAM full. Evicting page using ${document.getElementById("algorithm").value.toUpperCase()} algorithm...`, "warning");
                 evictedProcessId = evictPage();
-
                 if (evictedProcessId) {
                     if (swap.length < swapSize) {
                         swap.push(evictedProcessId);
@@ -697,42 +617,33 @@
                     return;
                 }
             }
-
             ram.push(processId);
             ramAddTime[processId] = accessTime;
             accessFrequency[processId] = 1;
             const orderIndex = accessOrder.indexOf(processId);
             if(orderIndex > -1) accessOrder.splice(orderIndex, 1);
             accessOrder.push(processId);
-
             logEvent(`Process ${processId} loaded into RAM.`, "success");
-
             addToCache(processId, accessTime);
-
             updateDisplay();
             highlightBlock(processId, 'ram', 'block-fade-in');
              if (evictedDestination === 'Swap') {
                  setTimeout(() => highlightBlock(evictedProcessId, 'swap', 'block-highlight'), 150);
              }
         }
-
         function evictPage() {
             if (ram.length === 0) {
                 logEvent("Attempted to evict from empty RAM.", "warning");
                 return null;
             }
-
             const algorithm = document.getElementById("algorithm").value;
             let victim = null;
             let validRamProcesses = ram.filter(p => p && processPool.includes(p));
-
             if(validRamProcesses.length === 0) {
                  logEvent("RAM contains no valid processes to evict.", "error");
                  return null;
             }
-
             let candidate = validRamProcesses[0];
-
             switch (algorithm) {
                 case "fifo":
                      victim = validRamProcesses.reduce((oldest, p) => {
@@ -741,7 +652,6 @@
                         return timeP < timeOldest ? p : oldest;
                      }, candidate);
                     break;
-
                 case "lru":
                      for (const p_ordered of accessOrder) {
                          if (validRamProcesses.includes(p_ordered)) {
@@ -751,7 +661,6 @@
                      }
                      if (!victim) victim = candidate;
                     break;
-
                 case "lfu":
                     victim = validRamProcesses.reduce((leastFreq, p) => {
                         const freqP = accessFrequency[p] || 0;
@@ -767,7 +676,6 @@
                         }
                     }, candidate);
                     break;
-
                 case "lifo":
                      victim = validRamProcesses.reduce((newest, p) => {
                          const timeP = ramAddTime[p] || 0;
@@ -775,7 +683,6 @@
                          return timeP > timeNewest ? p : newest;
                      }, candidate);
                     break;
-
                 case "mru":
                      for (let i = accessOrder.length - 1; i >= 0; i--) {
                         const p_ordered = accessOrder[i];
@@ -786,13 +693,11 @@
                      }
                      if (!victim) victim = validRamProcesses[validRamProcesses.length - 1];
                     break;
-
                 case "random":
                 default:
                     victim = validRamProcesses[Math.floor(Math.random() * validRamProcesses.length)];
                     break;
             }
-
             if (victim) {
                 logEvent(`Eviction choice (${algorithm.toUpperCase()}): Process ${victim}`, "info");
                 const ramIndex = ram.indexOf(victim);
@@ -805,33 +710,24 @@
             } else {
                  logEvent(`Eviction failed: No victim could be determined for algorithm ${algorithm.toUpperCase()}.`, "error");
             }
-
             return victim;
         }
-
         function cleanUpTrackingData(processId) {
              accessOrder = accessOrder.filter(p => p !== processId);
              delete accessFrequency[processId];
              delete ramAddTime[processId];
-
              if (cache.has(processId)) {
                  cache.delete(processId);
                  logEvent(`Process ${processId} also removed from cache during cleanup.`, "info");
              }
         }
-
-
         function updateUsageTracking(processId, accessTime) {
              accessOrder = accessOrder.filter(p => p !== processId);
              accessOrder.push(processId);
-
             accessFrequency[processId] = (accessFrequency[processId] || 0) + 1;
-
         }
-
         function addToCache(processId, accessTime) {
             if (cacheSize <= 0) return;
-
             let existingEntry = cache.get(processId);
             if (existingEntry) {
                 existingEntry.lastAccess = accessTime;
@@ -839,18 +735,15 @@
                 logEvent(`Process ${processId} accessed in cache (or updated).`, "info");
                 return;
             }
-
             if (cache.size >= cacheSize) {
                 let lruProcessInCache = null;
                 let oldestTime = Infinity;
-
                 for (const [key, value] of cache.entries()) {
                     if (value.lastAccess < oldestTime) {
                         oldestTime = value.lastAccess;
                         lruProcessInCache = key;
                     }
                 }
-
                 if (lruProcessInCache) {
                     cache.delete(lruProcessInCache);
                     logEvent(`Cache full. Removed ${lruProcessInCache} (LRU in Cache) from cache.`, "warning");
@@ -860,7 +753,6 @@
                      return;
                 }
             }
-
              if(cache.size < cacheSize){
                 cache.set(processId, { data: `Cached data for ${processId}`, lastAccess: accessTime });
                 logEvent(`Process ${processId} added to cache.`, "success");
@@ -868,36 +760,27 @@
                  logEvent(`Internal Error: Failed to add ${processId} to cache even after eviction check.`, "error");
              }
         }
-
-
         function updateDisplay() {
             const ramDiv = document.getElementById("ram");
             const swapDiv = document.getElementById("swap");
             const cacheDiv = document.getElementById("cache");
-
             ramDiv.innerHTML = '';
             swapDiv.innerHTML = '';
             cacheDiv.innerHTML = '';
-
             ram.forEach(p => ramDiv.insertAdjacentHTML('beforeend', createBlockHTML(p, 'ram')));
             swap.forEach(p => swapDiv.insertAdjacentHTML('beforeend', createBlockHTML(p, 'swap')));
-
             const sortedCacheEntries = [...cache.entries()].sort(([,a], [,b]) => a.lastAccess - b.lastAccess);
             sortedCacheEntries.forEach(([p]) => cacheDiv.insertAdjacentHTML('beforeend', createBlockHTML(p, 'cache')));
-
             document.getElementById('ram-usage').textContent = `${ram.length}/${ramSize} Used`;
             document.getElementById('swap-usage').textContent = `${swap.length}/${swapSize} Used`;
             document.getElementById('cache-usage').textContent = `${cache.size}/${cacheSize} Used`;
-
              document.querySelectorAll('.block').forEach(block => {
                 block.removeEventListener('click', handleBlockClick);
                 block.removeEventListener('contextmenu', handleContextMenu);
-
                 block.addEventListener('click', handleBlockClick);
                 block.addEventListener('contextmenu', handleContextMenu);
             });
         }
-
          function handleBlockClick(event) {
              const processId = event.target.getAttribute('data-process-id');
              if (processId) {
@@ -905,7 +788,6 @@
                 accessProcess();
              }
          }
-
          function handleContextMenu(event) {
              event.preventDefault();
              const blockElement = event.target.closest('.block');
@@ -916,20 +798,16 @@
                  }
              }
          }
-
-
          function createBlockHTML(processId, type) {
              let className = 'block';
              if (type === 'ram') className += ' in-ram';
              else if (type === 'swap') className += ' in-swap';
              else if (type === 'cache') className += ' in-cache';
-
              const sizeInKB = processSizes[processId] || 0;
              const formattedSize = formatSize(sizeInKB);
              const freq = accessFrequency[processId] || '-';
              const addTime = ramAddTime[processId] ? new Date(ramAddTime[processId]).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '-';
              let title = `Process ${processId} | Size: ${formattedSize}`;
-
              if (type === 'ram') {
                 title += ` | Freq: ${freq} | Added: ${addTime}`;
              } else if (type === 'cache') {
@@ -939,10 +817,8 @@
              } else if (type === 'swap') {
                  title += ` | Location: Swap`;
              }
-
              return `<div class="${className}" id="block-${type}-${processId}" data-process-id="${processId}" title="${title}">${processId}</div>`;
          }
-
         function logEvent(message, type = "info") {
             const logDiv = document.getElementById("log");
             if (!logDiv) { console.error("Log div not found!"); return; }
@@ -951,21 +827,16 @@
             if (type === 'success') typeClass = 'log-success';
             else if (type === 'warning') typeClass = 'log-warning';
             else if (type === 'error') typeClass = 'log-error';
-
             const entryDiv = document.createElement('div');
             entryDiv.className = 'log-entry';
-
             const timeSpan = document.createElement('span');
             timeSpan.className = 'log-time';
             timeSpan.textContent = `[${time}]`;
-
             const messageSpan = document.createElement('span');
             messageSpan.className = typeClass;
             messageSpan.innerHTML = ` ${message}`;
-
             entryDiv.appendChild(timeSpan);
             entryDiv.appendChild(messageSpan);
-
             const placeholder = logDiv.querySelector('strong');
             if (placeholder && logDiv.children.length <= 1 && logDiv.firstChild === placeholder) {
                  logDiv.innerHTML = '';
@@ -973,22 +844,17 @@
             } else {
                  logDiv.appendChild(entryDiv);
             }
-
             logDiv.scrollTop = logDiv.scrollHeight;
         }
-
         function highlightBlock(processId, location, animationClass = 'block-highlight') {
             const blockId = `block-${location}-${processId}`;
             const blockElement = document.getElementById(blockId);
             if (blockElement) {
                 const isFadeOut = animationClass.includes('fade-out');
                 const duration = animationClass.includes('fade') ? 500 : 700;
-
                 blockElement.classList.remove('block-highlight', 'block-fade-in', 'block-fade-out');
                 void blockElement.offsetWidth;
-
                 blockElement.classList.add(animationClass);
-
                 if (!isFadeOut) {
                     setTimeout(() => {
                          if (blockElement) {
@@ -999,39 +865,31 @@
             } else {
             }
         }
-
          function highlightExistingBlock(processId) {
              if (cache.has(processId)) highlightBlock(processId, 'cache');
              else if (ram.includes(processId)) highlightBlock(processId, 'ram');
              else if (swap.includes(processId)) highlightBlock(processId, 'swap');
          }
-
-
         document.addEventListener('DOMContentLoaded', () => {
              document.getElementById('ramSizeInput').value = ramSize;
              document.getElementById('swapSizeInput').value = swapSize;
              document.getElementById('cacheSizeInput').value = cacheSize;
              initSimulation();
-
              const modal = document.getElementById("aboutModal");
              const btn = document.getElementById("aboutButton");
              const span = document.getElementById("closeModalButton");
-
              btn.onclick = function() {
                modal.style.display = "flex";
              }
-
              span.onclick = function() {
                modal.style.display = "none";
              }
-
              window.onclick = function(event) {
                if (event.target == modal) {
                  modal.style.display = "none";
                }
              }
          });
-
     </script>
 </body>
 </html>
