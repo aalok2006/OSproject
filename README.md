@@ -39,7 +39,7 @@ This is a purely front-end application built with standard web technologies. No 
     Alternatively, download the project files as a ZIP archive.
 
 2.  **Open the HTML File:**
-    Simply open the `hvmm.html` (or the main HTML file's name) in your preferred web browser (Chrome, Firefox, Edge, Safari recommended).
+    Simply open the `index.html` (or the main HTML file's name) in your preferred web browser (Chrome, Firefox, Edge, Safari recommended).
 
 ## Usage & Interaction 🛠️
 
