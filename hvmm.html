@@ -271,6 +271,8 @@
         let swapSize = 4;
         let cacheSize = 3;
         const MAX_PROCESS_ID = 20;
+        const MIN_PROCESS_KB = 10;
+        const MAX_PROCESS_KB = 834 * 1024;
 
         let ram = [];
         let swap = [];
@@ -279,8 +281,22 @@
         let accessOrder = [];
         let accessFrequency = {};
         let ramAddTime = {};
+        let processSizes = {};
 
         let processPool = Array.from({ length: MAX_PROCESS_ID }, (_, i) => `P${i + 1}`);
+
+        function formatSize(kb) {
+            if (kb >= 1024) {
+                return (kb / 1024).toFixed(1) + ' MB';
+            }
+            return kb + ' KB';
+        }
+
+        function getRandomInt(min, max) {
+             min = Math.ceil(min);
+             max = Math.floor(max);
+             return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
 
         function initSimulation() {
             ram = [];
@@ -289,7 +305,15 @@
             accessOrder = [];
             accessFrequency = {};
             ramAddTime = {};
+            processSizes = {};
+
+            for (let i = 1; i <= MAX_PROCESS_ID; i++) {
+                const processId = `P${i}`;
+                processSizes[processId] = getRandomInt(MIN_PROCESS_KB, MAX_PROCESS_KB);
+            }
+
             logEvent("Simulation initialized.", "info");
+            logEvent(`Generated random sizes for ${MAX_PROCESS_ID} processes (Range: ${formatSize(MIN_PROCESS_KB)} - ${formatSize(MAX_PROCESS_KB)}).`, "info");
             updateDisplay();
         }
 
@@ -337,8 +361,14 @@
                  const allocated = new Set([...ram, ...swap, ...cache.keys()]);
                  const available = processPool.filter(p => !allocated.has(p));
                  if (available.length === 0) {
-                     processId = processPool[Math.floor(Math.random() * processPool.length)];
-                     logEvent(`No specific process ID given or invalid, and no unallocated processes available. Using random existing process: ${processId}`, "warning");
+                     const allExisting = [...allocated];
+                     if (allExisting.length > 0) {
+                         processId = allExisting[Math.floor(Math.random() * allExisting.length)];
+                         logEvent(`No specific process ID given or invalid, and no unallocated processes. Using random existing process: ${processId}`, "warning");
+                     } else {
+                         logEvent(`No specific process ID given or invalid, and no processes currently allocated.`, "error");
+                         return null;
+                     }
                  } else {
                     processId = available[Math.floor(Math.random() * available.length)];
                     logEvent(`No specific process ID given or invalid. Using random available process: ${processId}`, "info");
@@ -386,8 +416,10 @@
                 const evictedProcessId = evictPage();
 
                 if (evictedProcessId) {
+                    let evictedDestination = 'Discarded';
                     if (swap.length < swapSize) {
                         swap.push(evictedProcessId);
+                        evictedDestination = 'Swap';
                         logEvent(`Process ${evictedProcessId} evicted from RAM and moved to Swap.`, "info");
                     } else {
                         logEvent(`Process ${evictedProcessId} evicted from RAM. Swap full, page discarded.`, "warning");
@@ -403,7 +435,7 @@
                      logEvent(`Process ${processId} allocated to RAM after eviction.`, "success");
                      updateDisplay();
                      highlightBlock(processId, 'ram', 'block-fade-in');
-                     if (swap.includes(evictedProcessId)) {
+                     if (evictedDestination === 'Swap') {
                         setTimeout(() => highlightBlock(evictedProcessId, 'swap', 'block-highlight'), 100);
                      }
 
@@ -422,7 +454,9 @@
 
             if (cache.has(processId)) {
                 logEvent(`Cache Hit! Process ${processId} found in Cache.`, "success");
-                cache.get(processId).lastAccess = now;
+                const entry = cache.get(processId);
+                entry.lastAccess = now;
+                cache.set(processId, entry);
                 highlightBlock(processId, 'cache', 'block-highlight');
                 updateDisplay();
                 return;
@@ -447,7 +481,7 @@
                 return;
             }
 
-            logEvent(`Page Fault & Not Found! Process ${processId} not in Cache, RAM, or Swap.`, "error");
+            logEvent(`Page Fault & Not Found! Process ${processId} not in Cache, RAM, or Swap. Maybe it was terminated or never allocated?`, "error");
         }
 
         function manualAddToCache() {
@@ -460,14 +494,19 @@
             }
 
             if (cache.has(processId)) {
-                 logEvent(`Process ${processId} is already in the cache.`, "info");
+                 logEvent(`Process ${processId} is already in the cache. Updating access time.`, "info");
+                 const entry = cache.get(processId);
+                 entry.lastAccess = Date.now();
+                 cache.set(processId, entry);
                  highlightBlock(processId, 'cache', 'block-highlight');
+                 updateDisplay();
                  return;
             }
 
             if (ram.includes(processId)) {
                 logEvent(`Process ${processId} found in RAM. Attempting to add to cache manually...`, "info");
                 const now = Date.now();
+                updateUsageTracking(processId, now);
                 addToCache(processId, now);
                 updateDisplay();
                 highlightBlock(processId, 'cache', 'block-fade-in');
@@ -487,6 +526,40 @@
             updateDisplay();
         }
 
+        function endProcess(processId) {
+            logEvent(`Attempting to terminate Process ${processId}...`, "warning");
+            let found = false;
+
+            const ramIndex = ram.indexOf(processId);
+            if (ramIndex > -1) {
+                ram.splice(ramIndex, 1);
+                logEvent(`Process ${processId} removed from RAM.`, "info");
+                found = true;
+            }
+
+            const swapIndex = swap.indexOf(processId);
+            if (swapIndex > -1) {
+                swap.splice(swapIndex, 1);
+                logEvent(`Process ${processId} removed from Swap.`, "info");
+                found = true;
+            }
+
+            if (cache.has(processId)) {
+                cache.delete(processId);
+                logEvent(`Process ${processId} removed from Cache.`, "info");
+                found = true;
+            }
+
+            if (found) {
+                cleanUpTrackingData(processId);
+                logEvent(`Process ${processId} terminated successfully.`, "success");
+            } else {
+                logEvent(`Process ${processId} not found in RAM, Swap, or Cache. Cannot terminate.`, "error");
+            }
+
+            updateDisplay();
+        }
+
 
         function handlePageFault(processId, accessTime) {
             const swapIndex = swap.indexOf(processId);
@@ -501,6 +574,7 @@
 
 
             let evictedProcessId = null;
+            let evictedDestination = 'None';
             if (ram.length >= ramSize) {
                 logEvent(`RAM full. Evicting page using ${document.getElementById("algorithm").value.toUpperCase()} algorithm...`, "warning");
                 evictedProcessId = evictPage();
@@ -508,14 +582,16 @@
                 if (evictedProcessId) {
                     if (swap.length < swapSize) {
                         swap.push(evictedProcessId);
+                        evictedDestination = 'Swap';
                         logEvent(`Process ${evictedProcessId} evicted from RAM and moved to Swap.`, "info");
                     } else {
+                        evictedDestination = 'Discarded';
                         logEvent(`Process ${evictedProcessId} evicted from RAM. Swap full, page discarded.`, "warning");
                     }
                      cleanUpTrackingData(evictedProcessId);
                 } else {
                     logEvent(`RAM full, but failed to find page to evict. Cannot load ${processId}.`, "error");
-                    logEvent(`Process ${processId} load failed and is discarded.`, "error");
+                    logEvent(`Process ${processId} load failed and is discarded (could not evict from RAM).`, "error");
                     updateDisplay();
                     return;
                 }
@@ -534,7 +610,7 @@
 
             updateDisplay();
             highlightBlock(processId, 'ram', 'block-fade-in');
-             if (evictedProcessId && swap.includes(evictedProcessId)) {
+             if (evictedDestination === 'Swap') {
                  setTimeout(() => highlightBlock(evictedProcessId, 'swap', 'block-highlight'), 150);
              }
         }
@@ -547,7 +623,7 @@
 
             const algorithm = document.getElementById("algorithm").value;
             let victim = null;
-            let validRamProcesses = ram.filter(p => p);
+            let validRamProcesses = ram.filter(p => p && processPool.includes(p));
 
             if(validRamProcesses.length === 0) {
                  logEvent("RAM contains no valid processes to evict.", "error");
@@ -558,15 +634,17 @@
 
             switch (algorithm) {
                 case "fifo":
-                     victim = validRamProcesses.reduce((oldest, p) =>
-                         (ramAddTime[p] < ramAddTime[oldest] ? p : oldest),
-                         candidate);
+                     victim = validRamProcesses.reduce((oldest, p) => {
+                        const timeP = ramAddTime[p] || Infinity;
+                        const timeOldest = ramAddTime[oldest] || Infinity;
+                        return timeP < timeOldest ? p : oldest;
+                     }, candidate);
                     break;
 
                 case "lru":
-                     for (const p of accessOrder) {
-                         if (validRamProcesses.includes(p)) {
-                             victim = p;
+                     for (const p_ordered of accessOrder) {
+                         if (validRamProcesses.includes(p_ordered)) {
+                             victim = p_ordered;
                              break;
                          }
                      }
@@ -580,7 +658,9 @@
                         if (freqP < freqLeast) {
                             return p;
                         } else if (freqP === freqLeast) {
-                            return (ramAddTime[p] || 0) < (ramAddTime[leastFreq] || 0) ? p : leastFreq;
+                            const timeP = ramAddTime[p] || Infinity;
+                            const timeLeast = ramAddTime[leastFreq] || Infinity;
+                            return timeP < timeLeast ? p : leastFreq;
                         } else {
                             return leastFreq;
                         }
@@ -588,16 +668,18 @@
                     break;
 
                 case "lifo":
-                     victim = validRamProcesses.reduce((newest, p) =>
-                         (ramAddTime[p] > ramAddTime[newest] ? p : newest),
-                         candidate);
+                     victim = validRamProcesses.reduce((newest, p) => {
+                         const timeP = ramAddTime[p] || 0;
+                         const timeNewest = ramAddTime[newest] || 0;
+                         return timeP > timeNewest ? p : newest;
+                     }, candidate);
                     break;
 
                 case "mru":
                      for (let i = accessOrder.length - 1; i >= 0; i--) {
-                        const p = accessOrder[i];
-                        if (validRamProcesses.includes(p)) {
-                            victim = p;
+                        const p_ordered = accessOrder[i];
+                        if (validRamProcesses.includes(p_ordered)) {
+                            victim = p_ordered;
                             break;
                         }
                      }
@@ -616,7 +698,7 @@
                 if (ramIndex > -1) {
                      ram.splice(ramIndex, 1);
                 } else {
-                     logEvent(`Error: Chosen victim ${victim} not found in RAM array during removal.`, "error");
+                     logEvent(`Error: Chosen victim ${victim} not found in RAM array during removal. State might be inconsistent.`, "error");
                      return null;
                 }
             } else {
@@ -630,6 +712,11 @@
              accessOrder = accessOrder.filter(p => p !== processId);
              delete accessFrequency[processId];
              delete ramAddTime[processId];
+
+             if (cache.has(processId)) {
+                 cache.delete(processId);
+                 logEvent(`Process ${processId} also removed from cache during cleanup.`, "info");
+             }
         }
 
 
@@ -638,6 +725,7 @@
              accessOrder.push(processId);
 
             accessFrequency[processId] = (accessFrequency[processId] || 0) + 1;
+
         }
 
         function addToCache(processId, accessTime) {
@@ -646,30 +734,37 @@
             let existingEntry = cache.get(processId);
             if (existingEntry) {
                 existingEntry.lastAccess = accessTime;
+                cache.set(processId, existingEntry);
+                logEvent(`Process ${processId} accessed in cache (or updated).`, "info");
                 return;
             }
 
             if (cache.size >= cacheSize) {
-                let lruProcess = null;
+                let lruProcessInCache = null;
                 let oldestTime = Infinity;
+
                 for (const [key, value] of cache.entries()) {
                     if (value.lastAccess < oldestTime) {
                         oldestTime = value.lastAccess;
-                        lruProcess = key;
+                        lruProcessInCache = key;
                     }
                 }
-                if (lruProcess) {
-                    cache.delete(lruProcess);
-                    logEvent(`Cache full. Removed ${lruProcess} (LRU) from cache.`, "warning");
+
+                if (lruProcessInCache) {
+                    cache.delete(lruProcessInCache);
+                    logEvent(`Cache full. Removed ${lruProcessInCache} (LRU in Cache) from cache.`, "warning");
+                    highlightBlock(lruProcessInCache, 'cache', 'block-fade-out');
                 } else if (cache.size > 0) {
-                     logEvent(`Cache full but failed to find LRU entry to evict.`, "error");
+                     logEvent(`Cache full but failed to find LRU entry to evict. Cannot add ${processId}.`, "error");
                      return;
                 }
             }
 
              if(cache.size < cacheSize){
-                cache.set(processId, { data: `Data for ${processId}`, lastAccess: accessTime });
+                cache.set(processId, { data: `Cached data for ${processId}`, lastAccess: accessTime });
                 logEvent(`Process ${processId} added to cache.`, "success");
+             } else {
+                 logEvent(`Internal Error: Failed to add ${processId} to cache even after eviction check.`, "error");
              }
         }
 
@@ -679,12 +774,15 @@
             const swapDiv = document.getElementById("swap");
             const cacheDiv = document.getElementById("cache");
 
-            ramDiv.innerHTML = ram.map(p => createBlockHTML(p, 'ram')).join("");
-            swapDiv.innerHTML = swap.map(p => createBlockHTML(p, 'swap')).join("");
+            ramDiv.innerHTML = '';
+            swapDiv.innerHTML = '';
+            cacheDiv.innerHTML = '';
+
+            ram.forEach(p => ramDiv.insertAdjacentHTML('beforeend', createBlockHTML(p, 'ram')));
+            swap.forEach(p => swapDiv.insertAdjacentHTML('beforeend', createBlockHTML(p, 'swap')));
 
             const sortedCacheEntries = [...cache.entries()].sort(([,a], [,b]) => a.lastAccess - b.lastAccess);
-            cacheDiv.innerHTML = sortedCacheEntries.map(([p]) => createBlockHTML(p, 'cache')).join("");
-
+            sortedCacheEntries.forEach(([p]) => cacheDiv.insertAdjacentHTML('beforeend', createBlockHTML(p, 'cache')));
 
             document.getElementById('ram-usage').textContent = `${ram.length}/${ramSize} Used`;
             document.getElementById('swap-usage').textContent = `${swap.length}/${swapSize} Used`;
@@ -692,14 +790,29 @@
 
              document.querySelectorAll('.block').forEach(block => {
                 block.removeEventListener('click', handleBlockClick);
+                block.removeEventListener('contextmenu', handleContextMenu);
+
                 block.addEventListener('click', handleBlockClick);
+                block.addEventListener('contextmenu', handleContextMenu);
             });
         }
+
          function handleBlockClick(event) {
              const processId = event.target.getAttribute('data-process-id');
              if (processId) {
                 document.getElementById('processIdInput').value = processId;
                 accessProcess();
+             }
+         }
+
+         function handleContextMenu(event) {
+             event.preventDefault();
+             const blockElement = event.target.closest('.block');
+             if (blockElement) {
+                 const processId = blockElement.getAttribute('data-process-id');
+                 if (processId) {
+                    endProcess(processId);
+                 }
              }
          }
 
@@ -710,15 +823,20 @@
              else if (type === 'swap') className += ' in-swap';
              else if (type === 'cache') className += ' in-cache';
 
+             const sizeInKB = processSizes[processId] || 0;
+             const formattedSize = formatSize(sizeInKB);
              const freq = accessFrequency[processId] || '-';
-             const addTime = ramAddTime[processId] ? new Date(ramAddTime[processId]).toLocaleTimeString() : '-';
-             let title = `Process ${processId}`;
+             const addTime = ramAddTime[processId] ? new Date(ramAddTime[processId]).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '-';
+             let title = `Process ${processId} | Size: ${formattedSize}`;
+
              if (type === 'ram') {
                 title += ` | Freq: ${freq} | Added: ${addTime}`;
              } else if (type === 'cache') {
                  const cacheEntry = cache.get(processId);
-                 const accessTime = cacheEntry ? new Date(cacheEntry.lastAccess).toLocaleTimeString() : '-';
-                 title += ` | Last Access: ${accessTime}`;
+                 const accessTime = cacheEntry ? new Date(cacheEntry.lastAccess).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '-';
+                 title += ` | Last Cache Access: ${accessTime}`;
+             } else if (type === 'swap') {
+                 title += ` | Location: Swap`;
              }
 
              return `<div class="${className}" id="block-${type}-${processId}" data-process-id="${processId}" title="${title}">${processId}</div>`;
@@ -727,7 +845,7 @@
         function logEvent(message, type = "info") {
             const logDiv = document.getElementById("log");
             if (!logDiv) { console.error("Log div not found!"); return; }
-            const time = new Date().toLocaleTimeString();
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 });
             let typeClass = 'log-info';
             if (type === 'success') typeClass = 'log-success';
             else if (type === 'warning') typeClass = 'log-warning';
@@ -738,22 +856,23 @@
 
             const timeSpan = document.createElement('span');
             timeSpan.className = 'log-time';
-            timeSpan.textContent = time;
+            timeSpan.textContent = `[${time}]`;
 
             const messageSpan = document.createElement('span');
             messageSpan.className = typeClass;
-            messageSpan.textContent = message;
+            messageSpan.innerHTML = ` ${message}`;
 
             entryDiv.appendChild(timeSpan);
             entryDiv.appendChild(messageSpan);
 
             const placeholder = logDiv.querySelector('strong');
-            if (placeholder && logDiv.children.length === 1) {
+            if (placeholder && logDiv.children.length <= 1 && logDiv.firstChild === placeholder) {
                  logDiv.innerHTML = '';
+                 logDiv.appendChild(entryDiv);
+            } else {
+                 logDiv.appendChild(entryDiv);
             }
 
-
-            logDiv.appendChild(entryDiv);
             logDiv.scrollTop = logDiv.scrollHeight;
         }
 
@@ -761,6 +880,7 @@
             const blockId = `block-${location}-${processId}`;
             const blockElement = document.getElementById(blockId);
             if (blockElement) {
+                const isFadeOut = animationClass.includes('fade-out');
                 const duration = animationClass.includes('fade') ? 500 : 700;
 
                 blockElement.classList.remove('block-highlight', 'block-fade-in', 'block-fade-out');
@@ -768,11 +888,13 @@
 
                 blockElement.classList.add(animationClass);
 
-                setTimeout(() => {
-                     if (blockElement) {
-                        blockElement.classList.remove(animationClass);
-                     }
-                 }, duration);
+                if (!isFadeOut) {
+                    setTimeout(() => {
+                         if (blockElement) {
+                            blockElement.classList.remove(animationClass);
+                         }
+                     }, duration);
+                }
             } else {
             }
         }
