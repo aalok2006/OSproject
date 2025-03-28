@@ -33,13 +33,13 @@ This is a purely front-end application built with standard web technologies. No 
 
 1.  **Download or Clone:**
     ```sh
-    git clone https://github.com/your-username/your-repo-name.git
-    cd your-repo-name
+    git clone https://github.com/aalok2006/OS-project
+    cd OS-project
     ```
     Alternatively, download the project files as a ZIP archive.
 
 2.  **Open the HTML File:**
-    Simply open the `index.html` (or the main HTML file's name) in your preferred web browser (Chrome, Firefox, Edge, Safari recommended).
+    Simply open the `hvmm.html` (or the main HTML file's name) in your preferred web browser (Chrome, Firefox, Edge, Safari recommended).
 
 ## Usage & Interaction 🛠️
 
