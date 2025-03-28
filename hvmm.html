@@ -211,6 +211,83 @@
          .log-success { color: #90EE90; }
          .log-info { color: #ADD8E6; }
          .log-warning { color: #FFA500; }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: var(--surface-color);
+            margin: auto;
+            padding: 25px 30px;
+            border: 1px solid var(--border-color-light);
+            border-radius: var(--border-radius);
+            width: 80%;
+            max-width: 650px;
+            box-shadow: var(--box-shadow);
+            text-align: left;
+            position: relative;
+            color: var(--text-color);
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+         .modal-content h2 {
+            color: var(--primary-color);
+            margin-top: 0;
+            text-align: center;
+            border-bottom: 1px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+         }
+         .modal-content p, .modal-content ul {
+             font-size: 0.95em;
+             line-height: 1.6;
+             margin-bottom: 15px;
+         }
+         .modal-content ul {
+             padding-left: 25px;
+         }
+         .modal-content strong {
+             color: var(--primary-color);
+         }
+         .modal-content .attribution {
+             margin-top: 25px;
+             font-style: italic;
+             text-align: right;
+             font-size: 0.9em;
+             color: #ccc;
+         }
+
+
+        .close-button {
+            color: #aaa;
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 28px;
+            font-weight: bold;
+            line-height: 1;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: var(--text-color);
+            text-decoration: none;
+            cursor: pointer;
+        }
+
     </style>
 </head>
 <body>
@@ -225,6 +302,7 @@
             <label for="cacheSizeInput">Cache Size:</label>
             <input type="number" id="cacheSizeInput" value="3" min="0" max="10">
             <button onclick="applyConfig()">Apply Config & Reset</button>
+            <button id="aboutButton">About</button>
         </div>
 
         <div class="controls">
@@ -265,6 +343,29 @@
 
         <div id="log"><strong>System Log:</strong><br></div>
     </div>
+
+    <div id="aboutModal" class="modal">
+      <div class="modal-content">
+        <span class="close-button" id="closeModalButton">×</span>
+        <h2>About Hybrid Virtual Memory Manager</h2>
+        <p>This simulation demonstrates the concepts of a hybrid virtual memory system involving <strong>Cache</strong>, <strong>RAM (Main Memory)</strong>, and <strong>Swap Space</strong>.</p>
+        <p><strong>Key Features:</strong></p>
+        <ul>
+            <li><strong>Memory Hierarchy:</strong> Visualizes processes residing in Cache (fastest), RAM, or Swap Space (slowest, disk).</li>
+            <li><strong>Process Allocation:</strong> Adds new processes, placing them in RAM if space allows, or triggering eviction.</li>
+            <li><strong>Process Access:</strong> Simulates accessing a process. Hits in Cache/RAM are fast. Misses lead to page faults (loading from Swap or error if not found).</li>
+            <li><strong>Caching:</strong> Recently accessed items from RAM are placed in the Cache for faster subsequent access (LRU eviction within cache).</li>
+            <li><strong>Page Replacement Algorithms:</strong> When RAM is full and a new page needs to be loaded (either allocation or page fault), an existing page is evicted based on the selected algorithm (FIFO, LRU, LFU, LIFO, MRU, Random).</li>
+            <li><strong>Eviction:</strong> Evicted pages from RAM are moved to Swap Space if available, otherwise discarded.</li>
+            <li><strong>Process Termination:</strong> Right-clicking a process block removes it completely from all memory levels.</li>
+            <li><strong>Dynamic Configuration:</strong> Adjust RAM, Swap, and Cache sizes (resets simulation).</li>
+            <li><strong>Process Information:</strong> Hovering over a process block shows its simulated size and other relevant details (frequency, access/add time).</li>
+            <li><strong>System Log:</strong> Records all major events, hits, misses, faults, and errors.</li>
+        </ul>
+         <p class="attribution">Made By : AALOK</p>
+      </div>
+    </div>
+
 
     <script>
         let ramSize = 4;
@@ -911,6 +1012,24 @@
              document.getElementById('swapSizeInput').value = swapSize;
              document.getElementById('cacheSizeInput').value = cacheSize;
              initSimulation();
+
+             const modal = document.getElementById("aboutModal");
+             const btn = document.getElementById("aboutButton");
+             const span = document.getElementById("closeModalButton");
+
+             btn.onclick = function() {
+               modal.style.display = "flex";
+             }
+
+             span.onclick = function() {
+               modal.style.display = "none";
+             }
+
+             window.onclick = function(event) {
+               if (event.target == modal) {
+                 modal.style.display = "none";
+               }
+             }
          });
 
     </script>
