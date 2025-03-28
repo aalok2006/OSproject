@@ -16,7 +16,7 @@ swap_size = 3
 
 @app.route("/")
 def index():
-    return render_template("hvmm.html")
+    return render_template("index.html")
 
 @socketio.on("allocate_page")
 def allocate_page():
