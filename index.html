@@ -3,287 +3,566 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hybrid Virtual Memory Manager</title>
+    <title>Advanced Hybrid Virtual Memory Manager</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;700&family=Fira+Code:wght@400&display=swap');
+
         :root {
-            --bg-color: #1a1a1a;
-            --surface-color: #2c2c2c;
-            --text-color: #e0e0e0;
-            --primary-color: #4CAF50;
-            --ram-color-start: #87CEEB;
-            --ram-color-end: #1E90FF;
-            --swap-color-start: #FFB6C1;
-            --swap-color-end: #FF69B4;
-            --cache-color-start: #FFD700;
-            --cache-color-end: #FFA500;
-            --highlight-color: yellow;
-            --border-radius: 8px;
-            --box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            --border-color-light: #444;
+            --bg-color: #161b22; /* GitHub Dark Dimmed BG */
+            --surface-color: rgba(34, 40, 49, 0.6); /* Slightly transparent surface */
+            --surface-solid-color: #222831;
+            --text-color: #c9d1d9; /* GitHub Dark Dimmed Text */
+            --text-muted-color: #8b949e;
+            --primary-color: #58a6ff; /* GitHub Blue */
+            --secondary-color: #a371f7; /* GitHub Purple */
+            --success-color: #3fb950; /* GitHub Green */
+            --warning-color: #d29922; /* GitHub Yellow */
+            --error-color: #f85149; /* GitHub Red */
+            --dirty-color: #f85149; /* Red for dirty */
+            --highlight-color: #fada5e; /* Brighter yellow */
+
+            --ram-color-start: #64b5f6; /* Light Blue */
+            --ram-color-end: #1976d2;   /* Darker Blue */
+            --swap-color-start: #ffab91; /* Light Orange/Red */
+            --swap-color-end: #d84315;   /* Deep Orange */
+            --cache-color-start: #a5d6a7; /* Light Green */
+            --cache-color-end: #2e7d32;   /* Darker Green */
+
+            --border-radius: 12px;
+            --box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            --box-shadow-inset: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+            --border-color-light: #30363d;
+            --backdrop-blur: 8px;
+
+            --font-main: 'Poppins', sans-serif;
+            --font-mono: 'Fira Code', monospace;
+
+            --transition-speed-fast: 0.2s;
+            --transition-speed-medium: 0.4s;
+            --transition-speed-slow: 0.7s;
+            --move-animation-speed: 1s; /* Specific for block moves */
         }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            text-align: center;
-            background-color: var(--bg-color);
-            color: var(--text-color);
+
+        *, *::before, *::after {
+            box-sizing: border-box;
             margin: 0;
-            padding: 20px 10px;
+            padding: 0;
         }
+
+        body {
+            font-family: var(--font-main);
+            text-align: center;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%2320252c' fill-opacity='0.4'%3E%3Cpath d='M0 38.59l2.83-2.83 1.41 1.41L1.41 40H0v-1.41zM0 1.4l2.83 2.83 1.41-1.41L1.41 0H0v1.41zM38.59 40l-2.83-2.83 1.41-1.41L40 38.59V40h-1.41zM40 1.41l-2.83 2.83-1.41-1.41L38.59 0H40v1.41zM20 18.6l2.83-2.83 1.41 1.41L21.41 20l2.83 2.83-1.41 1.41L20 21.41l-2.83 2.83-1.41-1.41L18.59 20l-2.83-2.83 1.41-1.41L20 18.59z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"), var(--bg-color);
+            color: var(--text-color);
+            padding: 25px 10px;
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
         .main-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 10px;
+            max-width: 1400px;
+            margin: 15px auto;
+            padding: 0 20px;
         }
+
         h1 {
             color: var(--primary-color);
-            margin-bottom: 25px;
+            margin-bottom: 30px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(88, 166, 255, 0.3);
+            animation: fadeInDown 0.8s ease-out;
         }
-        .controls, .config {
+
+        /* Glassmorphism Panel Style */
+        .panel {
             background: var(--surface-color);
-            padding: 15px 20px;
-            margin-bottom: 25px;
+            padding: 20px 25px;
+            margin-bottom: 30px;
             border-radius: var(--border-radius);
             box-shadow: var(--box-shadow);
+            border: 1px solid var(--border-color-light);
+            backdrop-filter: blur(var(--backdrop-blur));
+            -webkit-backdrop-filter: blur(var(--backdrop-blur));
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
             align-items: center;
-            gap: 12px;
-            border: 1px solid var(--border-color-light);
+            gap: 15px;
+            animation: fadeInUp 0.6s ease-out forwards;
+            opacity: 0; /* Start hidden for animation */
         }
-        .config label, .controls label {
-            margin-right: 5px;
+        .panel:nth-of-type(2) { animation-delay: 0.1s; }
+        .panel:nth-of-type(3) { animation-delay: 0.2s; }
+
+        .panel label, .panel span {
+            margin-right: 8px;
             font-weight: 500;
+            font-size: 0.95em;
+            color: var(--text-muted-color);
         }
-        .memory-container {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 30px;
-            margin-top: 25px;
+        .panel strong {
+            color: var(--primary-color);
+            font-weight: 600;
         }
+
+        .stats-container {
+            font-size: 0.9em;
+            justify-content: space-around;
+            padding: 15px 20px;
+        }
+        .stats-container span { margin: 0 12px; white-space: nowrap; }
+        .stats-container strong { font-size: 1.1em; margin-left: 4px; }
+
+        #thrashing-indicator {
+            color: var(--error-color);
+            font-weight: bold;
+            margin-left: 20px;
+            display: none; /* Hidden by default */
+            animation: thrashingPulse 1s infinite;
+        }
+
+        .memory-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+            margin-top: 35px;
+            position: relative; /* For moving block positioning */
+            animation: fadeInUp 0.8s 0.3s ease-out forwards;
+            opacity: 0;
+        }
+
         .memory-section {
-            width: 280px;
-            padding: 15px;
+            min-height: 350px;
             background: var(--surface-color);
             border-radius: var(--border-radius);
             box-shadow: var(--box-shadow);
+            border: 1px solid var(--border-color-light);
+            backdrop-filter: blur(var(--backdrop-blur));
+            -webkit-backdrop-filter: blur(var(--backdrop-blur));
+            padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            border: 1px solid var(--border-color-light);
+            position: relative;
+            overflow: hidden; /* Clip moving blocks */
         }
+
         .memory-section h3 {
             margin-top: 0;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             color: var(--primary-color);
             border-bottom: 2px solid var(--primary-color);
-            padding-bottom: 8px;
+            padding-bottom: 12px;
             width: 100%;
             text-align: center;
-            font-size: 1.15em;
+            font-size: 1.3em;
+            font-weight: 600;
+            text-shadow: 0 0 5px rgba(88, 166, 255, 0.2);
         }
-         .memory-usage {
-            font-size: 0.9em;
-            color: #b0b0b0;
-            margin-bottom: 15px;
-         }
-        .block {
+
+         .memory-usage-container {
             width: 100%;
-            height: 35px;
-            margin: 6px 0;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+         }
+         .memory-usage-text {
+            font-size: 0.9em;
+            color: var(--text-muted-color);
+            font-weight: 500;
+            white-space: nowrap;
+         }
+        .progress-bar-container {
+            flex-grow: 1;
+            height: 8px;
+            background-color: #30363d;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            width: 0%; /* Updated by JS */
+            border-radius: 4px;
+            transition: width var(--transition-speed-medium) ease-out;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+        }
+
+        .block-container {
+            width: 100%;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            position: relative;
+            padding-top: 5px; /* Space for hover effect */
+        }
+
+        .block {
+            width: calc(100% - 4px);
+            height: 42px;
             text-align: center;
-            line-height: 35px;
-            border-radius: 5px;
+            line-height: 42px;
+            border-radius: 8px;
             cursor: pointer;
             font-weight: bold;
-            transition: all 0.3s ease-in-out, transform 0.1s ease;
+            transition:
+                background var(--transition-speed-medium) ease,
+                transform var(--transition-speed-fast) ease,
+                box-shadow var(--transition-speed-medium) ease,
+                opacity var(--transition-speed-medium) ease,
+                border var(--transition-speed-fast) ease;
             position: relative;
-            border: 1px solid transparent;
-            color: #111;
+            border: 2px solid transparent;
+            color: #ffffff;
+            font-size: 0.95em;
+            overflow: hidden;
+            z-index: 1;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            box-shadow: var(--box-shadow-inset), 0 2px 4px rgba(0,0,0,0.2);
         }
+
+        .block::before { /* Gradient overlay */
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 100%);
+            border-radius: inherit;
+            opacity: 0.8;
+            transition: opacity var(--transition-speed-medium) ease;
+            z-index: -1;
+            pointer-events: none;
+        }
+
          .block:hover {
-             transform: scale(1.03);
+             transform: translateY(-3px) scale(1.03);
              border-color: var(--highlight-color);
-             box-shadow: 0 0 8px rgba(255, 255, 0, 0.5);
+             box-shadow: 0 6px 15px rgba(250, 218, 94, 0.3), var(--box-shadow-inset);
+             z-index: 10; /* Bring to front on hover */
          }
-        .in-ram { background: linear-gradient(45deg, var(--ram-color-start), var(--ram-color-end)); }
-        .in-swap { background: linear-gradient(45deg, var(--swap-color-start), var(--swap-color-end)); }
-        .in-cache { background: linear-gradient(45deg, var(--cache-color-start), var(--cache-color-end)); }
-        .block-highlight {
-            animation: highlight-pulse 0.7s 1;
+         .block:hover::before { opacity: 1; }
+
+        .in-ram { background: linear-gradient(60deg, var(--ram-color-start), var(--ram-color-end)); }
+        .in-swap { background: linear-gradient(60deg, var(--swap-color-start), var(--swap-color-end)); }
+        .in-cache { background: linear-gradient(60deg, var(--cache-color-start), var(--cache-color-end)); }
+
+        /* Dirty block styling */
+        .block-dirty {
+            border-left: 5px solid var(--dirty-color);
+            animation: dirtyPulse 1.5s infinite ease-in-out;
         }
-        .block-fade-out {
-            animation: fade-out 0.5s forwards;
+        .block-dirty::after { /* Small indicator icon concept */
+            content: '●';
+            position: absolute;
+            top: 4px;
+            right: 8px;
+            color: var(--dirty-color);
+            font-size: 1.2em;
+            line-height: 1;
+            text-shadow: 0 0 3px black;
         }
-        .block-fade-in {
-            animation: fade-in 0.5s forwards;
+
+
+        /* --- Animation Classes --- */
+        .block-highlight { animation: highlight-pulse calc(var(--transition-speed-slow) * var(--sim-speed-factor, 1)) 1 ease-in-out; }
+        .block-fade-out { animation: fade-out calc(var(--transition-speed-medium) * var(--sim-speed-factor, 1)) forwards ease-out; }
+        .block-fade-in { animation: fade-in calc(var(--transition-speed-medium) * var(--sim-speed-factor, 1)) forwards ease-in; }
+        .block-terminate { animation: terminate-effect calc(var(--transition-speed-medium) * 1.2 * var(--sim-speed-factor, 1)) forwards ease-in; }
+        .block-write-back { animation: write-back-pulse calc(var(--transition-speed-slow) * var(--sim-speed-factor, 1)) 1 ease-in-out; }
+        .block-marked-dirty { animation: marked-dirty-pulse 0.5s 1 ease-out; }
+
+        /* Moving Block Styling */
+        .block-moving {
+            position: fixed; /* Use fixed for viewport positioning */
+            z-index: 1000;
+            pointer-events: none;
+            transition:
+                top calc(var(--move-animation-speed) * var(--sim-speed-factor, 1)) cubic-bezier(0.68, -0.55, 0.27, 1.55), /* Ease with overshoot */
+                left calc(var(--move-animation-speed) * var(--sim-speed-factor, 1)) cubic-bezier(0.68, -0.55, 0.27, 1.55),
+                transform calc(var(--move-animation-speed) * var(--sim-speed-factor, 1)) ease-in-out;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            transform: scale(1.1) rotate(3deg); /* Slightly larger and rotated when moving */
+            filter: brightness(1.1);
         }
+
+        /* Keyframes */
+        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes highlight-pulse {
-            0%, 100% { box-shadow: 0 0 5px 2px var(--highlight-color); border-color: var(--highlight-color); }
-            50% { box-shadow: 0 0 15px 5px var(--highlight-color); border-color: var(--highlight-color); }
+            0%, 100% { box-shadow: 0 0 8px 4px var(--highlight-color), var(--box-shadow-inset); border-color: var(--highlight-color); filter: brightness(1.1); }
+            50% { box-shadow: 0 0 20px 10px var(--highlight-color), var(--box-shadow-inset); border-color: var(--highlight-color); filter: brightness(1.3); }
         }
-         @keyframes fade-out {
-            from { opacity: 1; transform: scale(1); }
-            to { opacity: 0; transform: scale(0.8); }
+        @keyframes fade-out { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.8); } }
+        @keyframes fade-in { from { opacity: 0; transform: scale(0.8) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        @keyframes terminate-effect {
+            0% { opacity: 1; transform: scale(1) rotate(0deg); }
+            100% { opacity: 0; transform: scale(0) rotate(360deg); height: 0; margin: 0; padding: 0; border: 0; }
+        }
+        @keyframes write-back-pulse {
+            0%, 100% { box-shadow: 0 0 8px 4px var(--secondary-color), var(--box-shadow-inset); filter: brightness(1.0); }
+            50% { box-shadow: 0 0 20px 10px var(--secondary-color), var(--box-shadow-inset); filter: brightness(1.2); }
+        }
+        @keyframes marked-dirty-pulse {
+             0%, 100% { border-left-color: var(--dirty-color); }
+             50% { border-left-color: #ff8a80; /* Lighter red */ }
+        }
+        @keyframes dirtyPulse {
+             0%, 100% { border-left-width: 5px; }
+             50% { border-left-width: 7px; }
+        }
+         @keyframes thrashingPulse {
+             0%, 100% { opacity: 1; transform: scale(1); }
+             50% { opacity: 0.7; transform: scale(1.05); }
          }
-         @keyframes fade-in {
-            from { opacity: 0; transform: scale(0.8); }
-            to { opacity: 1; transform: scale(1); }
-         }
+
+
+        /* Controls Styling */
         button, select, input[type="number"], input[type="text"] {
-            margin: 5px;
-            padding: 10px 15px;
-            background: #3a3a3a;
+            margin: 5px 6px;
+            padding: 10px 18px;
+            background: rgba(58, 62, 68, 0.8); /* Darker, slightly transparent */
             color: var(--text-color);
-            border: 1px solid #555;
-            border-radius: 5px;
+            border: 1px solid var(--border-color-light);
+            border-radius: 8px;
             cursor: pointer;
             font-size: 0.95em;
-            transition: background-color 0.2s ease, border-color 0.2s ease;
+            transition: all var(--transition-speed-fast) ease;
+            font-family: var(--font-main);
+            box-shadow: var(--box-shadow-inset);
+            backdrop-filter: blur(2px); /* Subtle blur on controls */
+            -webkit-backdrop-filter: blur(2px);
         }
         input[type="number"], input[type="text"] {
-            width: 60px;
+            width: 75px;
             cursor: text;
+            text-align: center;
         }
-         input[type="text"]#processIdInput {
-             width: 90px;
-         }
-         input:focus {
+         input[type="text"]#processIdInput { width: 120px; }
+
+         input:focus, select:focus {
              outline: none;
              border-color: var(--primary-color);
-             box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+             box-shadow: 0 0 10px rgba(88, 166, 255, 0.4), var(--box-shadow-inset);
+             background-color: rgba(70, 75, 82, 0.9);
          }
+        button {
+             background-color: var(--primary-color);
+             color: #111;
+             font-weight: 500;
+             border: none;
+             box-shadow: 0 3px 8px rgba(88, 166, 255, 0.3);
+             display: inline-flex;
+             align-items: center;
+             gap: 6px;
+        }
         button:hover {
-            background: #4f4f4f;
-            border-color: #777;
+            background-color: #79b8ff; /* Lighter blue */
+            box-shadow: 0 5px 12px rgba(88, 166, 255, 0.4);
+            transform: translateY(-2px);
         }
         button:active {
-            background: #444;
-            transform: translateY(1px);
+            background-color: #4698f7;
+            transform: translateY(0px);
+            box-shadow: 0 1px 4px rgba(88, 166, 255, 0.2);
         }
-        #log {
-            margin: 30px auto;
-            padding: 15px;
+        button .icon { font-size: 1.1em; } /* Style for text icons */
+
+        /* Secondary Button Style (Purple) */
+        button.secondary { background-color: var(--secondary-color); box-shadow: 0 3px 8px rgba(163, 113, 247, 0.3); }
+        button.secondary:hover { background-color: #b392f9; box-shadow: 0 5px 12px rgba(163, 113, 247, 0.4); }
+        button.secondary:active { background-color: #9a5deb; box-shadow: 0 1px 4px rgba(163, 113, 247, 0.2); }
+
+         /* Danger Button Style (Red) */
+         button.danger { background-color: var(--error-color); box-shadow: 0 3px 8px rgba(248, 81, 73, 0.3); }
+         button.danger:hover { background-color: #ff7b72; box-shadow: 0 5px 12px rgba(248, 81, 73, 0.4); }
+         button.danger:active { background-color: #e1463f; box-shadow: 0 1px 4px rgba(248, 81, 73, 0.2); }
+
+
+        /* Log Styling */
+        #log-container {
+            margin: 40px auto;
+            padding: 25px;
             background: var(--surface-color);
             border-radius: var(--border-radius);
-            height: 250px;
+            border: 1px solid var(--border-color-light);
+            backdrop-filter: blur(var(--backdrop-blur));
+            -webkit-backdrop-filter: blur(var(--backdrop-blur));
+            max-width: 95%;
+            box-shadow: var(--box-shadow);
+             animation: fadeInUp 1s 0.5s ease-out forwards;
+             opacity: 0;
+        }
+        #log {
+            height: 300px;
             overflow-y: auto;
             text-align: left;
-            font-family: 'Courier New', Courier, monospace;
+            font-family: var(--font-mono);
             font-size: 0.9em;
-            border: 1px solid var(--border-color-light);
-            max-width: 90%;
-            box-shadow: var(--box-shadow);
+            position: relative;
         }
-        #log strong {
+         /* Custom Scrollbar */
+        #log::-webkit-scrollbar { width: 8px; }
+        #log::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
+        #log::-webkit-scrollbar-thumb { background: var(--primary-color); border-radius: 4px; }
+        #log::-webkit-scrollbar-thumb:hover { background: #79b8ff; }
+
+        #log .log-title {
              color: var(--primary-color);
+             display: block;
+             margin-bottom: 15px;
+             font-size: 1.2em;
+             font-family: var(--font-main);
+             font-weight: 600;
+             border-bottom: 1px solid var(--border-color-light);
+             padding-bottom: 10px;
         }
         .log-entry {
-            margin-bottom: 5px;
-            padding-bottom: 5px;
-            border-bottom: 1px dashed #4f4f4f;
+            margin-bottom: 8px;
+            padding: 6px 8px;
+            border-bottom: 1px dotted #4f4f4f;
+            display: flex;
+            align-items: flex-start;
+            transition: background-color var(--transition-speed-fast) ease, transform var(--transition-speed-fast) ease;
+            border-radius: 4px;
+            opacity: 0;
+            animation: logEntryFadeIn 0.5s forwards;
         }
-         .log-entry:last-child {
-             border-bottom: none;
-         }
-         .log-time { color: #aaa; margin-right: 10px; }
-         .log-error { color: #FF69B4; font-weight: bold;}
-         .log-success { color: #90EE90; }
-         .log-info { color: #ADD8E6; }
-         .log-warning { color: #FFA500; }
+         .log-entry:last-child { border-bottom: none; }
+         .log-entry:hover { background-color: rgba(255, 255, 255, 0.05); transform: translateX(3px); }
+         .log-icon { margin-right: 10px; width: 18px; text-align: center; font-size: 1.1em; line-height: 1.4; }
+         .log-time { color: var(--text-muted-color); margin-right: 12px; flex-shrink: 0; font-size: 0.9em; }
+         .log-message { flex-grow: 1; word-break: break-word; line-height: 1.5; }
+         .log-error { color: var(--error-color); }
+         .log-success { color: var(--success-color); }
+         .log-info { color: var(--primary-color); }
+         .log-warning { color: var(--warning-color); }
+         .log-debug { color: #6e7681; font-style: italic; } /* GitHub Dimmed Italic */
+         .log-writeback { color: var(--secondary-color); } /* Purple for writeback */
+
+        @keyframes logEntryFadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Modal Styling */
         .modal {
-            display: none;
             position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.6);
-            display: none;
+            z-index: 2000; /* Above moving blocks */
+            left: 0; top: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.75);
+            display: flex; /* Use flex directly */
             justify-content: center;
             align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity var(--transition-speed-medium) ease, visibility var(--transition-speed-medium) ease;
+        }
+        .modal.show {
+            opacity: 1;
+            visibility: visible;
         }
         .modal-content {
-            background-color: var(--surface-color);
-            margin: auto;
-            padding: 25px 30px;
+            background-color: var(--surface-solid-color);
+            padding: 35px 40px;
             border: 1px solid var(--border-color-light);
             border-radius: var(--border-radius);
-            width: 80%;
-            max-width: 650px;
-            box-shadow: var(--box-shadow);
-            text-align: left;
+            width: 85%;
+            max-width: 750px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
             position: relative;
             color: var(--text-color);
             max-height: 85vh;
             overflow-y: auto;
+            transform: scale(0.9);
+            transition: transform var(--transition-speed-medium) cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Elastic ease */
         }
+        .modal.show .modal-content { transform: scale(1); }
+
          .modal-content h2 {
             color: var(--primary-color);
-            margin-top: 0;
-            text-align: center;
+            margin-top: 0; text-align: center;
             border-bottom: 1px solid var(--primary-color);
-            padding-bottom: 10px;
-            margin-bottom: 20px;
+            padding-bottom: 18px; margin-bottom: 28px; font-weight: 600;
          }
-         .modal-content p, .modal-content ul {
-             font-size: 0.95em;
-             line-height: 1.6;
-             margin-bottom: 15px;
+         .modal-content p, .modal-content ul { font-size: 1em; line-height: 1.8; margin-bottom: 20px; }
+         .modal-content ul { padding-left: 35px; list-style: none; }
+         .modal-content li::before {
+             content: '✓'; color: var(--success-color);
+             font-weight: bold; display: inline-block;
+             width: 1.2em; margin-left: -1.3em; margin-right: 0.1em;
          }
-         .modal-content ul {
-             padding-left: 25px;
-         }
-         .modal-content strong {
-             color: var(--primary-color);
-         }
-         .modal-content .attribution {
-             margin-top: 25px;
-             font-style: italic;
-             text-align: right;
-             font-size: 0.9em;
-             color: #ccc;
-         }
+         .modal-content strong { color: var(--primary-color); font-weight: 500; }
+         .modal-content code { background-color: rgba(88, 166, 255, 0.1); padding: 3px 6px; border-radius: 5px; font-family: var(--font-mono); font-size: 0.9em; border: 1px solid rgba(88, 166, 255, 0.3); }
+         .modal-content .attribution { margin-top: 35px; font-style: italic; text-align: right; font-size: 0.9em; color: var(--text-muted-color); }
+
         .close-button {
-            color: #aaa;
-            position: absolute;
-            top: 10px;
-            right: 15px;
-            font-size: 28px;
-            font-weight: bold;
-            line-height: 1;
-        }
-        .close-button:hover,
-        .close-button:focus {
-            color: var(--text-color);
-            text-decoration: none;
+            color: var(--text-muted-color); position: absolute;
+            top: 18px; right: 22px; font-size: 36px; font-weight: bold; line-height: 1;
+            transition: color var(--transition-speed-fast) ease, transform var(--transition-speed-fast) ease;
             cursor: pointer;
         }
-        .aalok {
-            width: 100%;
-            font-size: 1.2rem;
+        .close-button:hover { color: var(--error-color); transform: rotate(90deg); }
+
+        /* Tooltip */
+        #tooltip {
+            position: absolute; display: none;
+            background-color: rgba(22, 27, 34, 0.95); /* Darker background */
+            color: var(--text-color);
+            border: 1px solid var(--border-color-light);
+            border-radius: 8px; padding: 12px 18px;
+            font-size: 0.88em; z-index: 1500;
+            pointer-events: none; white-space: pre-line; /* Allow line breaks */
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            max-width: 280px; font-family: var(--font-main);
+            backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+            line-height: 1.6;
         }
+        #tooltip strong { color: var(--primary-color); font-weight: 600; display: block; margin-bottom: 5px; font-size: 1.1em;}
+        #tooltip span { color: var(--text-muted-color); margin-right: 5px; }
+
+
+        /* Responsive Adjustments */
+        @media (max-width: 992px) {
+            .memory-grid { grid-template-columns: 1fr 1fr; gap: 30px; }
+        }
+        @media (max-width: 768px) {
+            .main-container { padding: 0 10px; }
+            .panel { flex-direction: column; align-items: stretch; gap: 10px; padding: 15px; }
+            .panel label, .panel span { margin-right: 0; margin-bottom: 3px; display: block; text-align: left;}
+            input[type="number"], input[type="text"], select, button { width: 100%; margin: 6px 0; }
+            .memory-grid { grid-template-columns: 1fr; gap: 25px; }
+            .memory-section { min-height: 300px; }
+            h1 { font-size: 1.8em; }
+            #log-container { padding: 15px; }
+            #log { height: 250px; max-width: 100%; }
+        }
+         @media (max-width: 480px) {
+            body { padding: 15px 5px; }
+            h1 { font-size: 1.6em; margin-bottom: 20px; }
+            button, select, input { padding: 12px 15px; font-size: 0.9em; }
+            .memory-section h3 { font-size: 1.15em; }
+            .block { height: 40px; line-height: 40px; font-size: 0.9em;}
+            .modal-content { padding: 25px 20px; width: 95%; }
+         }
+
     </style>
 </head>
 <body>
     <div class="main-container">
-        <h1>Hybrid Virtual Memory Manager</h1>
-        <div class="config">
-            <label for="ramSizeInput">RAM Size:</label>
-            <input type="number" id="ramSizeInput" value="4" min="1" max="20">
-            <label for="swapSizeInput">Swap Size:</label>
-            <input type="number" id="swapSizeInput" value="4" min="0" max="20">
-            <label for="cacheSizeInput">Cache Size:</label>
-            <input type="number" id="cacheSizeInput" value="3" min="0" max="10">
-            <button onclick="applyConfig()">Apply Config & Reset</button>
-            <button id="aboutButton">About</button>
+        <h1>Advanced Hybrid Virtual Memory Manager</h1>
+
+        <div class="panel config">
+            <label for="ramSizeInput">RAM:</label>
+            <input type="number" id="ramSizeInput" value="4" min="1" max="20" title="RAM Size (Frames)">
+            <label for="swapSizeInput">Swap:</label>
+            <input type="number" id="swapSizeInput" value="4" min="0" max="20" title="Swap Space Size (Frames)">
+            <label for="cacheSizeInput">Cache:</label>
+            <input type="number" id="cacheSizeInput" value="3" min="0" max="10" title="Cache Size (Entries)">
+            <button onclick="applyConfig()" title="Apply new sizes and reset simulation"><span class="icon">⚙️</span>Apply & Reset</button>
+            <button id="aboutButton" class="secondary" title="Show information about this simulation"><span class="icon">ℹ️</span>About</button>
         </div>
-        <div class="controls">
+
+        <div class="panel controls">
             <label for="algorithm">Algorithm:</label>
-            <select id="algorithm">
+            <select id="algorithm" title="Select page replacement algorithm for RAM eviction">
                 <option value="fifo">FIFO</option>
                 <option value="lru">LRU</option>
                 <option value="lfu">LFU</option>
@@ -291,605 +570,1129 @@
                 <option value="mru">MRU</option>
                 <option value="random">Random</option>
             </select>
-            <input type="text" id="processIdInput" placeholder="Process ID (e.g., P5)">
-            <button onclick="allocateProcess()">Allocate Process</button>
-            <button onclick="accessProcess()">Access Process</button>
-            <button onclick="manualAddToCache()">Add to Cache</button>
-            <button onclick="clearCache()">Clear Cache</button>
-            <button onclick="resetSimulation()">Reset Simulation</button>
+            <input type="text" id="processIdInput" placeholder="Process ID (e.g., P5)" title="Enter Process ID (P1-P20) or leave blank for random selection">
+            <button onclick="allocateProcess()" title="Allocate the specified (or random) process to RAM"><span class="icon">➕</span>Allocate</button>
+            <button onclick="accessProcess()" title="Access the specified (or random) process"><span class="icon">👆</span>Access</button>
+            <button onclick="markProcessDirty()" class="secondary" title="Mark specified RAM process as 'dirty' (modified)"><span class="icon">✏️</span>Write/Dirty</button>
+            <button onclick="manualAddToCache()" class="secondary" title="Manually add process from RAM to Cache"><span class="icon">⚡</span>To Cache</button>
+            <button onclick="clearCache()" class="danger" title="Remove all entries from the cache"><span class="icon">🧹</span>Clear Cache</button>
+            <button onclick="resetSimulation()" class="danger" title="Reset the entire simulation to initial state"><span class="icon">🔄</span>Reset Sim</button>
+            <label for="simSpeed">Speed:</label>
+             <select id="simSpeed" onchange="updateSimSpeed()" title="Adjust simulation animation speed">
+                 <option value="2">Slow (0.5x)</option>
+                 <option value="1.5">Slower (0.75x)</option>
+                 <option value="1" selected>Normal (1x)</option>
+                 <option value="0.5">Fast (2x)</option>
+                 <option value="0.25">Faster (4x)</option>
+                 <option value="0.1">Instant (10x)</option>
+             </select>
         </div>
-        <div class="memory-container">
-            <div class="memory-section">
-                <h3>Cache</h3>
-                <div id="cache-usage" class="memory-usage">0/3 Used</div>
-                <div id="cache" class="aalok"></div>
+
+        <div class="panel stats-container">
+            <span>Cache: <strong id="cacheHits">0</strong> H / <strong id="cacheAccesses">0</strong> Acc</span> |
+            <span>RAM: <strong id="ramHits">0</strong> H / <strong id="ramAccesses">0</strong> Acc</span> |
+            <span>Swap (Faults): <strong id="pageFaults">0</strong> F / <strong id="swapAccesses">0</strong> Acc</span> |
+            <span>TLB: <strong id="tlbHits">0</strong> H / <strong id="tlbMisses">0</strong> M</span> |
+            <span>Total Access: <strong id="totalAccesses">0</strong></span> |
+            <span>Hit Rate: <strong id="hitRate">N/A</strong></span> |
+            <span>Fault Rate: <strong id="faultRate">N/A</strong></span>
+            <span id="thrashing-indicator">🚨 THRASHING ALERT!</span>
+        </div>
+
+        <div class="memory-grid" id="memoryGrid">
+            <div class="memory-section" id="cache-section">
+                <h3><span class="icon">⚡</span> Cache</h3>
+                 <div class="memory-usage-container">
+                    <span id="cache-usage" class="memory-usage-text">0/3 Used</span>
+                    <div class="progress-bar-container"><div id="cache-progress" class="progress-bar" style="background: linear-gradient(90deg, var(--cache-color-start), var(--cache-color-end));"></div></div>
+                 </div>
+                <div id="cache" class="block-container"></div>
             </div>
-            <div class="memory-section">
-                <h3>Main Memory (RAM)</h3>
-                <div id="ram-usage" class="memory-usage">0/4 Used</div>
-                <div id="ram" class="aalok"></div>
+            <div class="memory-section" id="ram-section">
+                <h3><span class="icon">💾</span> Main Memory (RAM)</h3>
+                <div class="memory-usage-container">
+                    <span id="ram-usage" class="memory-usage-text">0/4 Used</span>
+                    <div class="progress-bar-container"><div id="ram-progress" class="progress-bar" style="background: linear-gradient(90deg, var(--ram-color-start), var(--ram-color-end));"></div></div>
+                 </div>
+                <div id="ram" class="block-container"></div>
             </div>
-            <div class="memory-section">
-                <h3>Swap Space</h3>
-                <div id="swap-usage" class="memory-usage">0/4 Used</div>
-                <div id="swap" class="aalok"></div>
+            <div class="memory-section" id="swap-section">
+                <h3><span class="icon">💿</span> Swap Space</h3>
+                 <div class="memory-usage-container">
+                    <span id="swap-usage" class="memory-usage-text">0/4 Used</span>
+                    <div class="progress-bar-container"><div id="swap-progress" class="progress-bar" style="background: linear-gradient(90deg, var(--swap-color-start), var(--swap-color-end));"></div></div>
+                 </div>
+                <div id="swap" class="block-container"></div>
             </div>
         </div>
-        <div id="log"><strong>System Log:</strong><br></div>
+
+        <div id="log-container">
+            <div id="log"><strong class="log-title">System Log</strong></div>
+        </div>
+        <div id="tooltip"></div>
     </div>
+
     <div id="aboutModal" class="modal">
       <div class="modal-content">
         <span class="close-button" id="closeModalButton">×</span>
-        <h2>About Hybrid Virtual Memory Manager</h2>
-        <p>This simulation demonstrates the concepts of a hybrid virtual memory system involving <strong>Cache</strong>, <strong>RAM (Main Memory)</strong>, and <strong>Swap Space</strong>.</p>
+        <h2>About Advanced Hybrid VMM</h2>
+        <p>This simulation demonstrates concepts of a hybrid virtual memory system involving <strong>Cache</strong>, <strong>RAM</strong>, and <strong>Swap Space</strong> with enhanced features and visualizations.</p>
         <p><strong>Key Features:</strong></p>
         <ul>
-            <li><strong>Memory Hierarchy:</strong> Visualizes processes residing in Cache (fastest), RAM, or Swap Space (slowest, disk).</li>
-            <li><strong>Process Allocation:</strong> Adds new processes, placing them in RAM if space allows, or triggering eviction.</li>
-            <li><strong>Process Access:</strong> Simulates accessing a process. Hits in Cache/RAM are fast. Misses lead to page faults (loading from Swap or error if not found).</li>
-            <li><strong>Caching:</strong> Recently accessed items from RAM are placed in the Cache for faster subsequent access (LRU eviction within cache).</li>
-            <li><strong>Page Replacement Algorithms:</strong> When RAM is full and a new page needs to be loaded (either allocation or page fault), an existing page is evicted based on the selected algorithm (FIFO, LRU, LFU, LIFO, MRU, Random).</li>
-            <li><strong>Eviction:</strong> Evicted pages from RAM are moved to Swap Space if available, otherwise discarded.</li>
-            <li><strong>Process Termination:</strong> Right-clicking a process block removes it completely from all memory levels.</li>
-            <li><strong>Dynamic Configuration:</strong> Adjust RAM, Swap, and Cache sizes (resets simulation).</li>
-            <li><strong>Process Information:</strong> Hovering over a process block shows its simulated size and other relevant details (frequency, access/add time).</li>
-            <li><strong>System Log:</strong> Records all major events, hits, misses, faults, and errors.</li>
+            <li><strong>Memory Hierarchy:</strong> Visualizes processes in Cache (fast), RAM (medium), or Swap Space (slow).</li>
+            <li><strong>Process Allocation/Access:</strong> Add/access processes, triggering placement and movement.</li>
+            <li><strong>Caching:</strong> RAM hits move processes to the Cache (LRU eviction).</li>
+            <li><strong>Page Replacement Algorithms:</strong> Select FIFO, LRU, LFU, LIFO, MRU, or Random for RAM eviction.</li>
+            <li><strong><span style="color: var(--error-color);">Dirty Bit</span> Simulation:</strong> Processes in RAM can be marked 'dirty'. Evicting a dirty page simulates a slower write-back to Swap.</li>
+            <li><strong><span style="color: var(--warning-color);">Thrashing Detection:</span></strong> Alerts if the recent page fault rate becomes excessively high.</li>
+            <li><strong>Process Termination:</strong> Right-click a block to remove it entirely.</li>
+            <li><strong>Dynamic Configuration & Speed Control:</strong> Adjust sizes and animation speed.</li>
+            <li><strong>Detailed Info & Stats:</strong> Hover for info; view hits, faults, rates, and conceptual TLB performance.</li>
+            <li><strong>Advanced Animations:</strong> Visual feedback for movement, state changes, and events.</li>
         </ul>
-         <p class="attribution">Made By : AALOK KUMAR YADAV</p>
+        <p><strong>Interactions:</strong></p>
+        <ul>
+            <li>Use controls to configure, allocate, access, mark dirty, or manage memory.</li>
+            <li>Click a block to select it and trigger an access.</li>
+            <li>Right-click a block to terminate the process.</li>
+            <li>Hover over blocks for detailed information via tooltips.</li>
+        </ul>
+         <p class="attribution">Concept By: AALOK KUMAR YADAV</p>
       </div>
     </div>
+
     <script>
+        // --- Global State ---
         let ramSize = 4;
         let swapSize = 4;
         let cacheSize = 3;
         const MAX_PROCESS_ID = 20;
-        const MIN_PROCESS_KB = 10;
-        const MAX_PROCESS_KB = 834 * 1024;
-        let ram = [];
-        let swap = [];
-        let cache = new Map();
-        let accessOrder = [];
-        let accessFrequency = {};
-        let ramAddTime = {};
-        let processSizes = {};
-        let processPool = Array.from({ length: MAX_PROCESS_ID }, (_, i) => `P${i + 1}`);
-        function formatSize(kb) {
-            if (kb >= 1024) {
-                return (kb / 1024).toFixed(1) + ' MB';
-            }
-            return kb + ' KB';
-        }
-        function getRandomInt(min, max) {
-             min = Math.ceil(min);
-             max = Math.floor(max);
-             return Math.floor(Math.random() * (max - min + 1)) + min;
-        }
+        const MIN_PROCESS_KB = 512; // Increased min size
+        const MAX_PROCESS_KB = 2 * 1024 * 1024; // Up to 2GB
+
+        let ram = []; // Array of process IDs in RAM
+        let swap = []; // Array of process IDs in Swap
+        let cache = new Map(); // Map: processId -> { data: string, lastAccess: timestamp }
+        let dirtyProcesses = new Set(); // Set of process IDs in RAM that are dirty
+
+        // Tracking data for algorithms
+        let accessOrder = []; // For LRU/MRU (RAM processes)
+        let accessFrequency = {}; // For LFU { processId: count }
+        let ramAddTime = {}; // For FIFO { processId: timestamp }
+        let processSizes = {}; // { processId: sizeInKB }
+
+        // Stats
+        let stats = {
+            cacheHits: 0, cacheAccesses: 0,
+            ramHits: 0, ramAccesses: 0,
+            pageFaults: 0, swapAccesses: 0,
+            tlbHits: 0, tlbMisses: 0,
+            totalAccesses: 0,
+            writeBacks: 0
+        };
+        let accessHistory = []; // For thrashing detection (stores 'hit' or 'fault')
+        const HISTORY_SIZE = 15;
+        const THRASHING_THRESHOLD = 0.7; // 70% fault rate in history
+
+        // Simulation Speed
+        let simulationSpeedFactor = 1;
+        const WRITE_BACK_DELAY_MS = 400; // Base delay for dirty writeback simulation
+
+        // Utility
+        const processPool = Array.from({ length: MAX_PROCESS_ID }, (_, i) => `P${i + 1}`);
+        const logDiv = document.getElementById("log");
+        const tooltipDiv = document.getElementById("tooltip");
+        const memoryGrid = document.getElementById('memoryGrid'); // Container for moving blocks
+
+        // --- Initialization ---
         function initSimulation() {
             ram = [];
             swap = [];
             cache.clear();
+            dirtyProcesses.clear();
             accessOrder = [];
             accessFrequency = {};
             ramAddTime = {};
             processSizes = {};
+            accessHistory = [];
+
+            // Reset stats
+            for (const key in stats) { stats[key] = 0; }
+
+            // Generate random sizes
             for (let i = 1; i <= MAX_PROCESS_ID; i++) {
                 const processId = `P${i}`;
                 processSizes[processId] = getRandomInt(MIN_PROCESS_KB, MAX_PROCESS_KB);
             }
-            logEvent("Simulation initialized.", "info");
-            logEvent(`Generated random sizes for ${MAX_PROCESS_ID} processes (Range: ${formatSize(MIN_PROCESS_KB)} - ${formatSize(MAX_PROCESS_KB)}).`, "info");
+            logEvent("Simulation Initialized", "success", "🚀");
+            logEvent(`Generated random sizes for ${MAX_PROCESS_ID} processes (Range: ${formatSize(MIN_PROCESS_KB)} - ${formatSize(MAX_PROCESS_KB)}).`, "debug");
             updateDisplay();
+            updateStatsDisplay();
+            checkThrashing(true); // Reset indicator
         }
+
         function applyConfig() {
              const newRamSize = parseInt(document.getElementById('ramSizeInput').value);
              const newSwapSize = parseInt(document.getElementById('swapSizeInput').value);
              const newCacheSize = parseInt(document.getElementById('cacheSizeInput').value);
+
              if (isNaN(newRamSize) || newRamSize < 1 || newRamSize > 20 ||
                  isNaN(newSwapSize) || newSwapSize < 0 || newSwapSize > 20 ||
                  isNaN(newCacheSize) || newCacheSize < 0 || newCacheSize > 10) {
-                  logEvent("Invalid size configuration. Please use valid numbers within limits.", "error");
+                  logEvent("Invalid size config. Limits: RAM(1-20), Swap(0-20), Cache(0-10).", "error", "❌");
                   document.getElementById('ramSizeInput').value = ramSize;
                   document.getElementById('swapSizeInput').value = swapSize;
                   document.getElementById('cacheSizeInput').value = cacheSize;
                   return;
              }
+
              ramSize = newRamSize;
              swapSize = newSwapSize;
              cacheSize = newCacheSize;
-             logEvent(`Configuration updated: RAM=${ramSize}, Swap=${swapSize}, Cache=${cacheSize}. Resetting simulation.`, "info");
+             logEvent(`Config Updated: RAM=${ramSize}, Swap=${swapSize}, Cache=${cacheSize}. Resetting...`, "info", "⚙️");
              initSimulation();
         }
+
         function resetSimulation() {
-            logEvent("Simulation reset requested.", "info");
+            logEvent("Simulation Reset", "info", "🔄");
             initSimulation();
         }
-        function getProcessIdInput(required = false) {
+
+        // --- Core Logic ---
+
+        function getProcessIdInput(required = false, checkExists = false) {
             const inputElement = document.getElementById('processIdInput');
             let processId = inputElement.value.trim().toUpperCase();
             let usedFallback = false;
-             if (!processId || !/^P\d+$/.test(processId) ) {
-                  if (required) {
-                       logEvent(`Valid Process ID required in input field for this action.`, "warning");
-                       inputElement.focus();
-                       return null;
-                  }
-                 usedFallback = true;
-                 const allocated = new Set([...ram, ...swap, ...cache.keys()]);
-                 const available = processPool.filter(p => !allocated.has(p));
-                 if (available.length === 0) {
-                     const allExisting = [...allocated];
-                     if (allExisting.length > 0) {
-                         processId = allExisting[Math.floor(Math.random() * allExisting.length)];
-                         logEvent(`No specific process ID given or invalid, and no unallocated processes. Using random existing process: ${processId}`, "warning");
-                     } else {
-                         logEvent(`No specific process ID given or invalid, and no processes currently allocated.`, "error");
-                         return null;
-                     }
-                 } else {
-                    processId = available[Math.floor(Math.random() * available.length)];
-                    logEvent(`No specific process ID given or invalid. Using random available process: ${processId}`, "info");
-                 }
-             } else {
+
+            if (!processId || !/^P\d+$/.test(processId)) {
+                usedFallback = true;
+                const allocated = new Set([...ram, ...swap, ...cache.keys()]);
+                const available = processPool.filter(p => !allocated.has(p));
+                const allExisting = [...allocated];
+
+                if (checkExists && allExisting.length > 0) { // Need an existing one (for access/dirty)
+                     processId = allExisting[Math.floor(Math.random() * allExisting.length)];
+                     logEvent(`No valid ID. Using random existing process: ${processId}`, "debug");
+                } else if (!checkExists && available.length > 0) { // Need an available one (for allocate)
+                     processId = available[Math.floor(Math.random() * available.length)];
+                     logEvent(`No valid ID. Using random available process: ${processId}`, "debug");
+                } else if (required) {
+                    logEvent(`Valid Process ID required, but none available/suitable.`, "warning", "⚠️");
+                    inputElement.focus();
+                    return null;
+                } else {
+                     logEvent(`No valid Process ID and no processes available/suitable.`, "warning", "⚠️");
+                     return null;
+                }
+            } else {
                  const num = parseInt(processId.substring(1));
                  if (num < 1 || num > MAX_PROCESS_ID) {
-                     logEvent(`Process ID ${processId} out of range (P1-P${MAX_PROCESS_ID}). Aborting.`, "error");
+                     logEvent(`Process ID ${processId} out of range (P1-P${MAX_PROCESS_ID}).`, "error", "❌");
                      inputElement.value = '';
                      return null;
                  }
-             }
+            }
+
             if (!usedFallback) {
                 inputElement.value = '';
             }
             return processId;
         }
-        function allocateProcess() {
-            const processId = getProcessIdInput(false);
+
+        async function allocateProcess() {
+            const processId = getProcessIdInput(false, false); // Not required, doesn't need to exist yet
             if (!processId) return;
+
             if (ram.includes(processId) || swap.includes(processId) || cache.has(processId)) {
-                logEvent(`Process ${processId} is already in memory (RAM, Swap, or Cache). Cannot allocate again.`, "warning");
-                highlightExistingBlock(processId);
+                logEvent(`Process ${processId} already allocated.`, "warning", "⚠️");
+                await highlightExistingBlock(processId);
                 return;
             }
-            logEvent(`Attempting to allocate Process ${processId}...`, "info");
+
+            logEvent(`Allocating Process ${processId}...`, "info", "📥");
+
             if (ram.length < ramSize) {
+                // Direct Allocation
                 ram.push(processId);
                 const now = Date.now();
-                accessOrder.push(processId);
-                accessFrequency[processId] = 1;
-                ramAddTime[processId] = now;
-                logEvent(`Process ${processId} allocated directly to RAM.`, "success");
+                updateTrackingOnAdd(processId, now);
+                logEvent(`Process ${processId} allocated to RAM.`, "success", "✅");
                 updateDisplay();
-                highlightBlock(processId, 'ram', 'block-fade-in');
+                await animateBlockAppearance(processId, 'ram', 'block-fade-in');
             } else {
-                logEvent(`RAM full. Evicting page using ${document.getElementById("algorithm").value.toUpperCase()} algorithm...`, "warning");
-                const evictedProcessId = evictPage();
-                if (evictedProcessId) {
-                    let evictedDestination = 'Discarded';
-                    if (swap.length < swapSize) {
-                        swap.push(evictedProcessId);
-                        evictedDestination = 'Swap';
-                        logEvent(`Process ${evictedProcessId} evicted from RAM and moved to Swap.`, "info");
-                    } else {
-                        logEvent(`Process ${evictedProcessId} evicted from RAM. Swap full, page discarded.`, "warning");
+                // Eviction Required
+                logEvent(`RAM full. Evicting page via ${document.getElementById("algorithm").value.toUpperCase()}...`, "warning", "⚖️");
+                const { victimId, writebackNeeded } = await evictPage(); // Evict returns victim and if writeback happened
+
+                if (victimId) {
+                    // Eviction animation handled within evictPage if writeback needed, otherwise fade out here
+                    if (!writebackNeeded) {
+                        await animateBlockRemoval(victimId, 'ram', 'block-fade-out');
                     }
-                     cleanUpTrackingData(evictedProcessId);
-                     ram.push(processId);
-                     const now = Date.now();
-                     accessOrder.push(processId);
-                     accessFrequency[processId] = 1;
-                     ramAddTime[processId] = now;
-                     logEvent(`Process ${processId} allocated to RAM after eviction.`, "success");
-                     updateDisplay();
-                     highlightBlock(processId, 'ram', 'block-fade-in');
-                     if (evictedDestination === 'Swap') {
-                        setTimeout(() => highlightBlock(evictedProcessId, 'swap', 'block-highlight'), 100);
-                     }
+
+                    let evictedDestination = 'Discarded';
+                    let movePromise = Promise.resolve();
+
+                    if (swap.length < swapSize) {
+                        // Move Evicted to Swap
+                        swap.push(victimId);
+                        evictedDestination = 'Swap';
+                        logEvent(`Process ${victimId} moved to Swap.`, "info", "📦");
+                        movePromise = animateBlockMove(victimId, 'ram', 'swap');
+                    } else {
+                        logEvent(`Process ${victimId} evicted & discarded (Swap full).`, "warning", "🗑️");
+                    }
+
+                    cleanUpTrackingData(victimId); // Clean up after move decision
+
+                    // Allocate New Process
+                    ram.push(processId);
+                    const now = Date.now();
+                    updateTrackingOnAdd(processId, now);
+                    logEvent(`Process ${processId} allocated to RAM.`, "success", "✅");
+
+                    updateDisplay(); // Render new state
+
+                    // Run animations concurrently
+                    await Promise.all([
+                         animateBlockAppearance(processId, 'ram', 'block-fade-in'),
+                         movePromise
+                    ]);
+
                 } else {
-                     logEvent(`RAM full, but failed to find a page to evict (RAM might be empty unexpectedly?). Allocation of ${processId} failed.`, "error");
+                     logEvent(`Allocation Failed: Could not evict page from RAM.`, "error", "❌");
+                     updateDisplay();
                 }
             }
+            updateStatsDisplay();
         }
-        function accessProcess() {
-            const processId = getProcessIdInput(false);
+
+        async function accessProcess() {
+            const processId = getProcessIdInput(false, true); // Not required, but must exist
              if (!processId) return;
-            logEvent(`Attempting to access Process ${processId}...`, "info");
+
+            logEvent(`Accessing Process ${processId}...`, "info", "🔍");
+            stats.totalAccesses++;
             const now = Date.now();
+            let accessType = 'miss'; // Default
+
+            // 1. Check Cache
             if (cache.has(processId)) {
-                logEvent(`Cache Hit! Process ${processId} found in Cache.`, "success");
+                stats.cacheHits++; stats.cacheAccesses++; stats.tlbHits++;
+                accessType = 'hit';
+                logEvent(`Cache Hit: Process ${processId}.`, "success", "🎯");
                 const entry = cache.get(processId);
                 entry.lastAccess = now;
-                cache.set(processId, entry);
-                highlightBlock(processId, 'cache', 'block-highlight');
-                updateDisplay();
-                return;
+                cache.set(processId, entry); // Update access time
+                await highlightBlock(processId, 'cache', 'block-highlight');
+                updateDisplay(['cache']); // Update cache usage/progress
             }
-            logEvent(`Cache Miss for ${processId}. Checking RAM...`, "info");
-            if (ram.includes(processId)) {
-                logEvent(`RAM Hit! Process ${processId} found in RAM.`, "success");
-                updateUsageTracking(processId, now);
-                addToCache(processId, now);
-                highlightBlock(processId, 'ram', 'block-highlight');
-                updateDisplay();
-                return;
+            // 2. Check RAM
+            else if (ram.includes(processId)) {
+                stats.ramHits++; stats.ramAccesses++; stats.tlbHits++;
+                accessType = 'hit';
+                logEvent(`RAM Hit: Process ${processId}. Moving to Cache...`, "success", "✅");
+                updateUsageTracking(processId, now); // Update LRU/LFU etc.
+                await highlightBlock(processId, 'ram', 'block-highlight');
+                await addToCache(processId, now); // Add to cache (handles cache eviction)
+                updateDisplay(); // Update all displays
             }
-            logEvent(`RAM Miss for ${processId}. Checking Swap...`, "info");
-            if (swap.includes(processId)) {
-                logEvent(`Page Fault! Process ${processId} found in Swap Space. Loading into RAM...`, "warning");
-                handlePageFault(processId, now);
-                return;
+            // 3. Check Swap -> Page Fault
+            else if (swap.includes(processId)) {
+                stats.pageFaults++; stats.swapAccesses++; stats.tlbMisses++;
+                accessType = 'fault';
+                logEvent(`Page Fault: Process ${processId} in Swap. Loading...`, "warning", "📉");
+                await handlePageFault(processId, now);
+                // updateDisplay called within handlePageFault
             }
-            logEvent(`Page Fault & Not Found! Process ${processId} not in Cache, RAM, or Swap. Maybe it was terminated or never allocated?`, "error");
+            // 4. Not Found
+            else {
+                 logEvent(`Access Failed: Process ${processId} not found.`, "error", "❓");
+                 // No stats update here as it wasn't a valid access attempt on existing memory
+                 stats.totalAccesses--; // Decrement as it wasn't a real access
+            }
+
+            // Update history for thrashing detection
+            if (accessType !== 'miss') { // Only record valid accesses
+                 accessHistory.push(accessType === 'fault' ? 'fault' : 'hit');
+                 if (accessHistory.length > HISTORY_SIZE) {
+                     accessHistory.shift(); // Keep history size fixed
+                 }
+                 checkThrashing();
+            }
+
+            updateStatsDisplay();
         }
-        function manualAddToCache() {
-            const processId = getProcessIdInput(true);
+
+        async function markProcessDirty() {
+             const processId = getProcessIdInput(true, true); // Require input, must exist
+             if (!processId) return;
+
+             if (ram.includes(processId)) {
+                 if (dirtyProcesses.has(processId)) {
+                    logEvent(`Process ${processId} is already dirty.`, "info", "✏️");
+                    await highlightBlock(processId, 'ram', 'block-highlight');
+                 } else {
+                    dirtyProcesses.add(processId);
+                    logEvent(`Process ${processId} marked as dirty.`, "warning", "✏️");
+                    updateDisplay(['ram']); // Update display to show dirty state
+                    await animateBlockStateChange(processId, 'ram', 'block-marked-dirty');
+                 }
+             } else {
+                 logEvent(`Cannot mark dirty: Process ${processId} is not in RAM.`, "error", "❌");
+                 await highlightExistingBlock(processId);
+             }
+        }
+
+
+        async function manualAddToCache() {
+            const processId = getProcessIdInput(true, true); // Require input, must exist
             if (!processId) return;
-            if (cacheSize <= 0) {
-                logEvent("Cache is disabled (size 0). Cannot add.", "warning");
-                return;
-            }
+
+            if (cacheSize <= 0) { logEvent("Cache disabled (size 0).", "warning", "⚠️"); return; }
             if (cache.has(processId)) {
-                 logEvent(`Process ${processId} is already in the cache. Updating access time.`, "info");
+                 logEvent(`Process ${processId} already in cache. Updating access.`, "info", "💡");
                  const entry = cache.get(processId);
                  entry.lastAccess = Date.now();
                  cache.set(processId, entry);
-                 highlightBlock(processId, 'cache', 'block-highlight');
-                 updateDisplay();
+                 await highlightBlock(processId, 'cache', 'block-highlight', 300);
+                 updateDisplay(['cache']);
                  return;
+            }
+
+            if (ram.includes(processId)) {
+                stats.ramAccesses++; // Count as a RAM access conceptually
+                stats.totalAccesses++; // And a total access
+                logEvent(`Manually adding ${processId} (RAM) to Cache...`, "info", "➡️");
+                const now = Date.now();
+                updateUsageTracking(processId, now); // Update RAM stats
+                await addToCache(processId, now); // Handles logic and animations
+                updateDisplay();
+                accessHistory.push('hit'); // Count as hit for thrashing calc
+                 if (accessHistory.length > HISTORY_SIZE) accessHistory.shift();
+                 checkThrashing();
+                 updateStatsDisplay();
+            } else {
+                logEvent(`Cannot add to Cache: Process ${processId} not in RAM.`, "warning", "⚠️");
+                await highlightExistingBlock(processId);
+            }
+        }
+
+        async function clearCache() {
+            if (cache.size === 0) { logEvent("Cache already empty.", "info", "✅"); return; }
+            logEvent("Clearing Cache...", "info", "🧹");
+
+            const fadePromises = [];
+            cache.forEach((value, processId) => {
+                 fadePromises.push(animateBlockRemoval(processId, 'cache', 'block-fade-out'));
+             });
+            await Promise.all(fadePromises);
+
+            cache.clear();
+            logEvent("Cache Cleared.", "success", "✨");
+            updateDisplay(['cache']);
+            updateStatsDisplay(); // Reset cache stats implicitly? No, keep history.
+        }
+
+        async function endProcess(processId) {
+            logEvent(`Terminating Process ${processId}...`, "warning", "❌");
+            let foundLocation = null;
+            let removalPromise = Promise.resolve();
+
+            if (cache.has(processId)) {
+                foundLocation = 'cache';
+                removalPromise = animateBlockRemoval(processId, 'cache', 'block-terminate');
+                cache.delete(processId);
+                logEvent(`Process ${processId} removed from Cache.`, "info", "🗑️");
             }
             if (ram.includes(processId)) {
-                logEvent(`Process ${processId} found in RAM. Attempting to add to cache manually...`, "info");
-                const now = Date.now();
-                updateUsageTracking(processId, now);
-                addToCache(processId, now);
-                updateDisplay();
-                highlightBlock(processId, 'cache', 'block-fade-in');
+                const ramIndex = ram.indexOf(processId);
+                if (ramIndex > -1) {
+                     if (!foundLocation) {
+                        foundLocation = 'ram';
+                        removalPromise = animateBlockRemoval(processId, 'ram', 'block-terminate');
+                     }
+                     ram.splice(ramIndex, 1);
+                     logEvent(`Process ${processId} removed from RAM.`, "info", "🗑️");
+                }
+            }
+             if (swap.includes(processId)) {
+                const swapIndex = swap.indexOf(processId);
+                 if (swapIndex > -1) {
+                     if (!foundLocation) {
+                        foundLocation = 'swap';
+                        removalPromise = animateBlockRemoval(processId, 'swap', 'block-terminate');
+                     }
+                     swap.splice(swapIndex, 1);
+                     logEvent(`Process ${processId} removed from Swap.`, "info", "🗑️");
+                 }
+            }
+
+
+            if (foundLocation) {
+                await removalPromise;
+                cleanUpTrackingData(processId); // Also cleans dirty status
+                logEvent(`Process ${processId} terminated.`, "success", "✔️");
             } else {
-                logEvent(`Process ${processId} must be in RAM to be added to the cache manually.`, "warning");
-                highlightExistingBlock(processId);
+                logEvent(`Termination Failed: Process ${processId} not found.`, "error", "❓");
             }
-        }
-        function clearCache() {
-            if (cache.size === 0) {
-                 logEvent("Cache is already empty.", "info");
-                 return;
-            }
-            cache.clear();
-            logEvent("Cache cleared manually.", "info");
+
             updateDisplay();
+            updateStatsDisplay();
         }
-        function endProcess(processId) {
-            logEvent(`Attempting to terminate Process ${processId}...`, "warning");
-            let found = false;
-            const ramIndex = ram.indexOf(processId);
-            if (ramIndex > -1) {
-                ram.splice(ramIndex, 1);
-                logEvent(`Process ${processId} removed from RAM.`, "info");
-                found = true;
-            }
+
+        // --- Helper Functions ---
+
+        async function handlePageFault(processId, accessTime) {
+            // 1. Animate removal from Swap
+            await animateBlockRemoval(processId, 'swap', 'block-fade-out');
             const swapIndex = swap.indexOf(processId);
-            if (swapIndex > -1) {
-                swap.splice(swapIndex, 1);
-                logEvent(`Process ${processId} removed from Swap.`, "info");
-                found = true;
-            }
-            if (cache.has(processId)) {
-                cache.delete(processId);
-                logEvent(`Process ${processId} removed from Cache.`, "info");
-                found = true;
-            }
-            if (found) {
-                cleanUpTrackingData(processId);
-                logEvent(`Process ${processId} terminated successfully.`, "success");
-            } else {
-                logEvent(`Process ${processId} not found in RAM, Swap, or Cache. Cannot terminate.`, "error");
-            }
-            updateDisplay();
-        }
-        function handlePageFault(processId, accessTime) {
-            const swapIndex = swap.indexOf(processId);
-            if (swapIndex > -1) {
-                 swap.splice(swapIndex, 1);
-                 logEvent(`Process ${processId} removed from Swap.`, "info");
-            } else {
-                logEvent(`Error: Process ${processId} not found in Swap during page fault handling.`, "error");
-                updateDisplay();
-                return;
-            }
+            if (swapIndex > -1) swap.splice(swapIndex, 1);
+            else { logEvent(`Error: ${processId} vanished from Swap during Page Fault!`, "error", "👻"); return; }
+            logEvent(`Process ${processId} removed from Swap.`, "debug");
+
             let evictedProcessId = null;
-            let evictedDestination = 'None';
+            let ramEvictionMovePromise = Promise.resolve();
+            let writebackOccurred = false;
+
+            // 2. Check for RAM Eviction
             if (ram.length >= ramSize) {
-                logEvent(`RAM full. Evicting page using ${document.getElementById("algorithm").value.toUpperCase()} algorithm...`, "warning");
-                evictedProcessId = evictPage();
+                logEvent(`RAM full. Evicting page via ${document.getElementById("algorithm").value.toUpperCase()}...`, "warning", "⚖️");
+                const { victimId, writebackNeeded } = await evictPage();
+                evictedProcessId = victimId;
+                writebackOccurred = writebackNeeded;
+
                 if (evictedProcessId) {
+                    // Eviction animation (fade or writeback pulse) handled in evictPage if dirty
+                    if (!writebackOccurred) {
+                         await animateBlockRemoval(evictedProcessId, 'ram', 'block-fade-out');
+                    }
+
                     if (swap.length < swapSize) {
                         swap.push(evictedProcessId);
-                        evictedDestination = 'Swap';
-                        logEvent(`Process ${evictedProcessId} evicted from RAM and moved to Swap.`, "info");
+                        logEvent(`Process ${evictedProcessId} moved to Swap.`, "info", "📦");
+                        ramEvictionMovePromise = animateBlockMove(evictedProcessId, 'ram', 'swap');
                     } else {
-                        evictedDestination = 'Discarded';
-                        logEvent(`Process ${evictedProcessId} evicted from RAM. Swap full, page discarded.`, "warning");
+                        logEvent(`Process ${evictedProcessId} evicted & discarded (Swap full).`, "warning", "🗑️");
                     }
-                     cleanUpTrackingData(evictedProcessId);
+                    cleanUpTrackingData(evictedProcessId);
                 } else {
-                    logEvent(`RAM full, but failed to find page to evict. Cannot load ${processId}.`, "error");
-                    logEvent(`Process ${processId} load failed and is discarded (could not evict from RAM).`, "error");
+                    logEvent(`Page Fault Failed: Could not evict page. ${processId} load aborted.`, "error", "❌");
+                    // Process is now out of swap, effectively discarded
                     updateDisplay();
                     return;
                 }
             }
+
+            // 3. Add faulted process to RAM
             ram.push(processId);
-            ramAddTime[processId] = accessTime;
-            accessFrequency[processId] = 1;
-            const orderIndex = accessOrder.indexOf(processId);
-            if(orderIndex > -1) accessOrder.splice(orderIndex, 1);
-            accessOrder.push(processId);
-            logEvent(`Process ${processId} loaded into RAM.`, "success");
-            addToCache(processId, accessTime);
-            updateDisplay();
-            highlightBlock(processId, 'ram', 'block-fade-in');
-             if (evictedDestination === 'Swap') {
-                 setTimeout(() => highlightBlock(evictedProcessId, 'swap', 'block-highlight'), 150);
-             }
+            updateTrackingOnAdd(processId, accessTime);
+            logEvent(`Process ${processId} loaded into RAM.`, "success", "✅");
+            updateDisplay(); // Render the new state
+
+            // 4. Animate Page-In and potential Eviction-Move
+            const pageInPromise = animateBlockMove(processId, 'swap', 'ram', true);
+            await Promise.all([pageInPromise, ramEvictionMovePromise]);
+
+            // 5. Add to cache
+             await addToCache(processId, accessTime);
+             updateDisplay(); // Final update potentially including cache changes
         }
-        function evictPage() {
-            if (ram.length === 0) {
-                logEvent("Attempted to evict from empty RAM.", "warning");
-                return null;
-            }
+
+        async function evictPage() {
+            if (ram.length === 0) { logEvent("Eviction skipped: RAM empty.", "debug"); return { victimId: null, writebackNeeded: false }; }
+
             const algorithm = document.getElementById("algorithm").value;
-            let victim = null;
+            let victimId = null;
             let validRamProcesses = ram.filter(p => p && processPool.includes(p));
-            if(validRamProcesses.length === 0) {
-                 logEvent("RAM contains no valid processes to evict.", "error");
-                 return null;
-            }
+            if (validRamProcesses.length === 0) { logEvent("Eviction Failed: No valid processes in RAM.", "error", "❌"); return { victimId: null, writebackNeeded: false }; }
+
+            // --- Algorithm Logic ---
             let candidate = validRamProcesses[0];
             switch (algorithm) {
-                case "fifo":
-                     victim = validRamProcesses.reduce((oldest, p) => {
-                        const timeP = ramAddTime[p] || Infinity;
-                        const timeOldest = ramAddTime[oldest] || Infinity;
-                        return timeP < timeOldest ? p : oldest;
+                 case "fifo": victimId = validRamProcesses.reduce((oldest, p) => (ramAddTime[p] || Infinity) < (ramAddTime[oldest] || Infinity) ? p : oldest, candidate); break;
+                 case "lru":
+                     for (const p_ordered of accessOrder) { if (validRamProcesses.includes(p_ordered)) { victimId = p_ordered; break; } }
+                     if (!victimId) victimId = validRamProcesses[0];
+                     break;
+                 case "lfu":
+                     victimId = validRamProcesses.reduce((leastFreq, p) => {
+                         const freqP = accessFrequency[p] || 0; const freqLeast = accessFrequency[leastFreq] || 0;
+                         if (freqP < freqLeast) return p;
+                         if (freqP === freqLeast) return (ramAddTime[p] || Infinity) < (ramAddTime[leastFreq] || Infinity) ? p : leastFreq;
+                         return leastFreq;
                      }, candidate);
-                    break;
-                case "lru":
-                     for (const p_ordered of accessOrder) {
-                         if (validRamProcesses.includes(p_ordered)) {
-                             victim = p_ordered;
-                             break;
-                         }
-                     }
-                     if (!victim) victim = candidate;
-                    break;
-                case "lfu":
-                    victim = validRamProcesses.reduce((leastFreq, p) => {
-                        const freqP = accessFrequency[p] || 0;
-                        const freqLeast = accessFrequency[leastFreq] || 0;
-                        if (freqP < freqLeast) {
-                            return p;
-                        } else if (freqP === freqLeast) {
-                            const timeP = ramAddTime[p] || Infinity;
-                            const timeLeast = ramAddTime[leastFreq] || Infinity;
-                            return timeP < timeLeast ? p : leastFreq;
-                        } else {
-                            return leastFreq;
-                        }
-                    }, candidate);
-                    break;
-                case "lifo":
-                     victim = validRamProcesses.reduce((newest, p) => {
-                         const timeP = ramAddTime[p] || 0;
-                         const timeNewest = ramAddTime[newest] || 0;
-                         return timeP > timeNewest ? p : newest;
-                     }, candidate);
-                    break;
-                case "mru":
-                     for (let i = accessOrder.length - 1; i >= 0; i--) {
-                        const p_ordered = accessOrder[i];
-                        if (validRamProcesses.includes(p_ordered)) {
-                            victim = p_ordered;
-                            break;
-                        }
-                     }
-                     if (!victim) victim = validRamProcesses[validRamProcesses.length - 1];
-                    break;
-                case "random":
-                default:
-                    victim = validRamProcesses[Math.floor(Math.random() * validRamProcesses.length)];
-                    break;
+                     break;
+                 case "lifo": victimId = validRamProcesses.reduce((newest, p) => (ramAddTime[p] || 0) > (ramAddTime[newest] || 0) ? p : newest, candidate); break;
+                 case "mru":
+                     for (let i = accessOrder.length - 1; i >= 0; i--) { if (validRamProcesses.includes(accessOrder[i])) { victimId = accessOrder[i]; break; } }
+                     if (!victimId) victimId = validRamProcesses[validRamProcesses.length - 1];
+                     break;
+                 case "random": default: victimId = validRamProcesses[Math.floor(Math.random() * validRamProcesses.length)]; break;
             }
-            if (victim) {
-                logEvent(`Eviction choice (${algorithm.toUpperCase()}): Process ${victim}`, "info");
-                const ramIndex = ram.indexOf(victim);
+
+            let writebackNeeded = false;
+            if (victimId) {
+                logEvent(`Eviction choice (${algorithm.toUpperCase()}): Process ${victimId}`, "debug");
+                const ramIndex = ram.indexOf(victimId);
                 if (ramIndex > -1) {
+                    // --- Dirty Check ---
+                    if (dirtyProcesses.has(victimId)) {
+                        writebackNeeded = true;
+                        stats.writeBacks++;
+                        logEvent(`Process ${victimId} is dirty. Simulating Write-Back...`, "log-writeback", "💾");
+                        // Animate write-back *before* removing visually
+                        await animateBlockStateChange(victimId, 'ram', 'block-write-back');
+                        await wait(WRITE_BACK_DELAY_MS); // Simulate write delay
+                        dirtyProcesses.delete(victimId); // Clean the bit after write
+                        logEvent(`Write-Back complete for ${victimId}.`, "log-writeback", "✔️");
+                    }
+                    // --- Remove from RAM array ---
                      ram.splice(ramIndex, 1);
+                     // Tracking data (accessOrder, freq, addTime) cleaned up in calling function after move decision
                 } else {
-                     logEvent(`Error: Chosen victim ${victim} not found in RAM array during removal. State might be inconsistent.`, "error");
-                     return null;
+                     logEvent(`Error: Eviction victim ${victimId} not found in RAM array.`, "error", "❌");
+                     victimId = null; // Failed
                 }
             } else {
-                 logEvent(`Eviction failed: No victim could be determined for algorithm ${algorithm.toUpperCase()}.`, "error");
+                 logEvent(`Eviction failed: No victim determined.`, "error", "❌");
             }
-            return victim;
+            return { victimId, writebackNeeded };
         }
+
+
         function cleanUpTrackingData(processId) {
              accessOrder = accessOrder.filter(p => p !== processId);
              delete accessFrequency[processId];
              delete ramAddTime[processId];
+             dirtyProcesses.delete(processId); // Ensure dirty bit is cleared
              if (cache.has(processId)) {
                  cache.delete(processId);
-                 logEvent(`Process ${processId} also removed from cache during cleanup.`, "info");
+                 logEvent(`Process ${processId} removed from cache during cleanup.`, "debug");
              }
         }
+
+        function updateTrackingOnAdd(processId, timestamp) {
+             ramAddTime[processId] = timestamp;
+             accessFrequency[processId] = 1;
+             accessOrder = accessOrder.filter(p => p !== processId);
+             accessOrder.push(processId);
+             dirtyProcesses.delete(processId); // Process starts clean
+        }
+
         function updateUsageTracking(processId, accessTime) {
              accessOrder = accessOrder.filter(p => p !== processId);
              accessOrder.push(processId);
-            accessFrequency[processId] = (accessFrequency[processId] || 0) + 1;
+             accessFrequency[processId] = (accessFrequency[processId] || 0) + 1;
         }
-        function addToCache(processId, accessTime) {
+
+        async function addToCache(processId, accessTime) {
             if (cacheSize <= 0) return;
+
+            let cacheEvictionPromise = Promise.resolve();
+
             let existingEntry = cache.get(processId);
             if (existingEntry) {
                 existingEntry.lastAccess = accessTime;
                 cache.set(processId, existingEntry);
-                logEvent(`Process ${processId} accessed in cache (or updated).`, "info");
+                logEvent(`Process ${processId} cache access time updated.`, "debug");
+                await highlightBlock(processId, 'cache', 'block-highlight', 250);
+                updateDisplay(['cache']);
                 return;
             }
+
             if (cache.size >= cacheSize) {
-                let lruProcessInCache = null;
+                let lruKey = null;
                 let oldestTime = Infinity;
-                for (const [key, value] of cache.entries()) {
-                    if (value.lastAccess < oldestTime) {
-                        oldestTime = value.lastAccess;
-                        lruProcessInCache = key;
-                    }
-                }
-                if (lruProcessInCache) {
-                    cache.delete(lruProcessInCache);
-                    logEvent(`Cache full. Removed ${lruProcessInCache} (LRU in Cache) from cache.`, "warning");
-                    highlightBlock(lruProcessInCache, 'cache', 'block-fade-out');
+                cache.forEach((value, key) => { if (value.lastAccess < oldestTime) { oldestTime = value.lastAccess; lruKey = key; } });
+
+                if (lruKey) {
+                    logEvent(`Cache full. Evicting ${lruKey} (LRU).`, "warning", "💨");
+                    cache.delete(lruKey);
+                    cacheEvictionPromise = animateBlockRemoval(lruKey, 'cache', 'block-fade-out');
                 } else if (cache.size > 0) {
-                     logEvent(`Cache full but failed to find LRU entry to evict. Cannot add ${processId}.`, "error");
+                     logEvent(`Cache full but failed to find LRU entry.`, "error", "❌");
                      return;
                 }
             }
-             if(cache.size < cacheSize){
-                cache.set(processId, { data: `Cached data for ${processId}`, lastAccess: accessTime });
-                logEvent(`Process ${processId} added to cache.`, "success");
+
+            await cacheEvictionPromise; // Wait for potential eviction animation
+
+            if(cache.size < cacheSize){
+                cache.set(processId, { data: `Data for ${processId}`, lastAccess: accessTime });
+                logEvent(`Process ${processId} added to cache.`, "success", "💡");
+                updateDisplay(['cache']); // Render new state
+                await animateBlockAppearance(processId, 'cache', 'block-fade-in');
              } else {
-                 logEvent(`Internal Error: Failed to add ${processId} to cache even after eviction check.`, "error");
+                  logEvent(`Internal Error: Failed add to cache post-eviction check.`, "error", "❌");
              }
         }
-        function updateDisplay() {
-            const ramDiv = document.getElementById("ram");
-            const swapDiv = document.getElementById("swap");
-            const cacheDiv = document.getElementById("cache");
-            ramDiv.innerHTML = '';
-            swapDiv.innerHTML = '';
-            cacheDiv.innerHTML = '';
-            ram.forEach(p => ramDiv.insertAdjacentHTML('beforeend', createBlockHTML(p, 'ram')));
-            swap.forEach(p => swapDiv.insertAdjacentHTML('beforeend', createBlockHTML(p, 'swap')));
-            const sortedCacheEntries = [...cache.entries()].sort(([,a], [,b]) => a.lastAccess - b.lastAccess);
-            sortedCacheEntries.forEach(([p]) => cacheDiv.insertAdjacentHTML('beforeend', createBlockHTML(p, 'cache')));
-            document.getElementById('ram-usage').textContent = `${ram.length}/${ramSize} Used`;
-            document.getElementById('swap-usage').textContent = `${swap.length}/${swapSize} Used`;
-            document.getElementById('cache-usage').textContent = `${cache.size}/${cacheSize} Used`;
-             document.querySelectorAll('.block').forEach(block => {
-                block.removeEventListener('click', handleBlockClick);
-                block.removeEventListener('contextmenu', handleContextMenu);
-                block.addEventListener('click', handleBlockClick);
-                block.addEventListener('contextmenu', handleContextMenu);
-            });
-        }
-         function handleBlockClick(event) {
-             const processId = event.target.getAttribute('data-process-id');
-             if (processId) {
-                document.getElementById('processIdInput').value = processId;
-                accessProcess();
+
+         // --- Thrashing Detection ---
+         function checkThrashing(forceReset = false) {
+             const indicator = document.getElementById('thrashing-indicator');
+             if (forceReset || accessHistory.length < HISTORY_SIZE / 2) { // Don't check with too little data
+                 indicator.style.display = 'none';
+                 return;
              }
-         }
-         function handleContextMenu(event) {
-             event.preventDefault();
-             const blockElement = event.target.closest('.block');
-             if (blockElement) {
-                 const processId = blockElement.getAttribute('data-process-id');
-                 if (processId) {
-                    endProcess(processId);
+
+             const faultsInHistory = accessHistory.filter(a => a === 'fault').length;
+             const faultRate = faultsInHistory / accessHistory.length;
+
+             if (faultRate >= THRASHING_THRESHOLD) {
+                 if (indicator.style.display === 'none') {
+                     logEvent(`High Page Fault Rate (${(faultRate * 100).toFixed(0)}%)! Potential Thrashing!`, "error", "🚨");
                  }
+                 indicator.style.display = 'inline';
+             } else {
+                 indicator.style.display = 'none';
              }
          }
+
+        // --- Display & Animation ---
+
+        function updateDisplay(sectionsToUpdate = ['cache', 'ram', 'swap']) {
+            const containers = {
+                cache: document.getElementById("cache"),
+                ram: document.getElementById("ram"),
+                swap: document.getElementById("swap")
+            };
+            const usageTexts = {
+                cache: document.getElementById("cache-usage"),
+                ram: document.getElementById("ram-usage"),
+                swap: document.getElementById("swap-usage")
+            };
+             const progressBars = {
+                 cache: document.getElementById("cache-progress"),
+                 ram: document.getElementById("ram-progress"),
+                 swap: document.getElementById("swap-progress")
+            };
+             const counts = { cache: cache.size, ram: ram.length, swap: swap.length };
+             const sizes = { cache: cacheSize, ram: ramSize, swap: swapSize };
+             const dataArrays = { cache: [...cache.keys()], ram: ram, swap: swap }; // Use keys for cache rendering order
+
+             sectionsToUpdate.forEach(section => {
+                const container = containers[section];
+                if (!container) return;
+                container.innerHTML = ''; // Clear only necessary sections
+
+                 // Sort cache by access time for consistent (though not guaranteed visual) order
+                 const itemsToRender = (section === 'cache')
+                     ? [...cache.entries()].sort(([,a], [,b]) => a.lastAccess - b.lastAccess).map(([key]) => key)
+                     : dataArrays[section];
+
+                 itemsToRender.forEach(p => {
+                    if (p) container.insertAdjacentHTML('beforeend', createBlockHTML(p, section));
+                 });
+
+                 // Update usage text and progress bar
+                 const count = counts[section];
+                 const size = sizes[section];
+                 usageTexts[section].textContent = `${count}/${size} Used`;
+                 const percentage = size > 0 ? (count / size) * 100 : 0;
+                 progressBars[section].style.width = `${percentage}%`;
+             });
+
+             // Attach event listeners using delegation on memoryGrid
+             memoryGrid.removeEventListener('click', handleBlockEvent);
+             memoryGrid.removeEventListener('contextmenu', handleBlockEvent);
+             memoryGrid.removeEventListener('mouseover', handleBlockEvent);
+             memoryGrid.removeEventListener('mouseout', handleBlockEvent);
+
+             memoryGrid.addEventListener('click', handleBlockEvent);
+             memoryGrid.addEventListener('contextmenu', handleBlockEvent);
+             memoryGrid.addEventListener('mouseover', handleBlockEvent);
+             memoryGrid.addEventListener('mouseout', handleBlockEvent);
+        }
+
+        // --- Delegated Event Handler ---
+         function handleBlockEvent(event) {
+             const block = event.target.closest('.block');
+             if (!block) {
+                 if(event.type === 'mouseout') hideTooltip(); // Hide tooltip if mouse leaves the grid area
+                 return;
+             }
+
+             const processId = block.getAttribute('data-process-id');
+             const type = block.closest('.memory-section')?.id.split('-')[0]; // cache, ram, swap
+
+             if (!processId || !type) return;
+
+             switch(event.type) {
+                 case 'click':
+                     document.getElementById('processIdInput').value = processId;
+                     logEvent(`Clicked ${processId}, accessing...`, 'debug');
+                     accessProcess();
+                     break;
+                 case 'contextmenu':
+                     event.preventDefault();
+                     logEvent(`Right-clicked ${processId}, terminating...`, 'debug');
+                     endProcess(processId);
+                     break;
+                 case 'mouseover':
+                     showTooltip(block, processId, type);
+                     break;
+                 case 'mouseout':
+                     hideTooltip();
+                     break;
+             }
+         }
+
+
+        // --- HTML Creation ---
          function createBlockHTML(processId, type) {
              let className = 'block';
              if (type === 'ram') className += ' in-ram';
              else if (type === 'swap') className += ' in-swap';
              else if (type === 'cache') className += ' in-cache';
-             const sizeInKB = processSizes[processId] || 0;
-             const formattedSize = formatSize(sizeInKB);
-             const freq = accessFrequency[processId] || '-';
-             const addTime = ramAddTime[processId] ? new Date(ramAddTime[processId]).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '-';
-             let title = `Process ${processId} | Size: ${formattedSize}`;
-             if (type === 'ram') {
-                title += ` | Freq: ${freq} | Added: ${addTime}`;
-             } else if (type === 'cache') {
-                 const cacheEntry = cache.get(processId);
-                 const accessTime = cacheEntry ? new Date(cacheEntry.lastAccess).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '-';
-                 title += ` | Last Cache Access: ${accessTime}`;
-             } else if (type === 'swap') {
-                 title += ` | Location: Swap`;
+             if (type === 'ram' && dirtyProcesses.has(processId)) {
+                 className += ' block-dirty';
              }
-             return `<div class="${className}" id="block-${type}-${processId}" data-process-id="${processId}" title="${title}">${processId}</div>`;
+             return `<div class="${className}" id="block-${type}-${processId}" data-process-id="${processId}">${processId}</div>`;
          }
-        function logEvent(message, type = "info") {
-            const logDiv = document.getElementById("log");
+
+        // --- Logging ---
+        function logEvent(message, type = "info", icon = null) {
             if (!logDiv) { console.error("Log div not found!"); return; }
-            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 });
-            let typeClass = 'log-info';
-            if (type === 'success') typeClass = 'log-success';
-            else if (type === 'warning') typeClass = 'log-warning';
-            else if (type === 'error') typeClass = 'log-error';
+
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 2 });
+            let typeClass = 'log-info'; let logIcon = icon;
+
+            switch(type) {
+                case 'success': typeClass = 'log-success'; if(!logIcon) logIcon = '✅'; break;
+                case 'warning': typeClass = 'log-warning'; if(!logIcon) logIcon = '⚠️'; break;
+                case 'error':   typeClass = 'log-error';   if(!logIcon) logIcon = '❌'; break;
+                case 'debug':   typeClass = 'log-debug';   if(!logIcon) logIcon = '🐞'; break;
+                case 'log-writeback': typeClass = 'log-writeback'; if(!logIcon) logIcon = '💾'; break; // Specific for writeback
+                case 'info': default: typeClass = 'log-info'; if(!logIcon) logIcon = 'ℹ️'; break;
+            }
+
             const entryDiv = document.createElement('div');
             entryDiv.className = 'log-entry';
-            const timeSpan = document.createElement('span');
-            timeSpan.className = 'log-time';
-            timeSpan.textContent = `[${time}]`;
-            const messageSpan = document.createElement('span');
-            messageSpan.className = typeClass;
-            messageSpan.innerHTML = ` ${message}`;
-            entryDiv.appendChild(timeSpan);
-            entryDiv.appendChild(messageSpan);
-            const placeholder = logDiv.querySelector('strong');
-            if (placeholder && logDiv.children.length <= 1 && logDiv.firstChild === placeholder) {
-                 logDiv.innerHTML = '';
-                 logDiv.appendChild(entryDiv);
-            } else {
-                 logDiv.appendChild(entryDiv);
-            }
-            logDiv.scrollTop = logDiv.scrollHeight;
+            entryDiv.innerHTML = `<span class="log-icon ${typeClass}">${logIcon || ''}</span><span class="log-time">[${time}]</span><span class="log-message ${typeClass}">${message}</span>`;
+
+            const wasScrolledToBottom = Math.abs(logDiv.scrollHeight - logDiv.clientHeight - logDiv.scrollTop) < 5;
+            logDiv.appendChild(entryDiv);
+            if (wasScrolledToBottom) logDiv.scrollTop = logDiv.scrollHeight; // Auto-scroll only if already at bottom
         }
-        function highlightBlock(processId, location, animationClass = 'block-highlight') {
-            const blockId = `block-${location}-${processId}`;
-            const blockElement = document.getElementById(blockId);
-            if (blockElement) {
-                const isFadeOut = animationClass.includes('fade-out');
-                const duration = animationClass.includes('fade') ? 500 : 700;
-                blockElement.classList.remove('block-highlight', 'block-fade-in', 'block-fade-out');
-                void blockElement.offsetWidth;
-                blockElement.classList.add(animationClass);
-                if (!isFadeOut) {
-                    setTimeout(() => {
-                         if (blockElement) {
-                            blockElement.classList.remove(animationClass);
-                         }
-                     }, duration);
-                }
-            } else {
-            }
-        }
-         function highlightExistingBlock(processId) {
-             if (cache.has(processId)) highlightBlock(processId, 'cache');
-             else if (ram.includes(processId)) highlightBlock(processId, 'ram');
-             else if (swap.includes(processId)) highlightBlock(processId, 'swap');
+
+        // --- Animation Helpers ---
+        function getAnimationPromise(element, eventName = 'animationend') {
+             return new Promise(resolve => {
+                 const handler = (event) => {
+                     if (event.target === element) {
+                         element.removeEventListener(eventName, handler);
+                         resolve();
+                     }
+                 };
+                 element.addEventListener(eventName, handler);
+                 // Safety timeout
+                 setTimeout(() => {
+                     element.removeEventListener(eventName, handler);
+                     resolve();
+                 }, getSimulationDuration(1500)); // Increased safety margin
+             });
          }
-        document.addEventListener('DOMContentLoaded', () => {
+
+        async function highlightBlock(processId, location, animationClass = 'block-highlight', duration = 700) {
+             const blockElement = document.getElementById(`block-${location}-${processId}`);
+             if (blockElement) {
+                 blockElement.classList.remove('block-highlight', 'block-write-back', 'block-marked-dirty'); // Clear potentially interfering anims
+                 void blockElement.offsetWidth; // Reflow
+                 blockElement.classList.add(animationClass);
+                 await getAnimationPromise(blockElement);
+                 // Don't remove immediately, let CSS handle removal if animation is non-infinite
+                 // Only remove if it's a pulse style animation after duration
+                 if (animationClass.includes('pulse') || animationClass.includes('highlight')) {
+                      setTimeout(() => {
+                         if(blockElement) blockElement.classList.remove(animationClass);
+                     }, getSimulationDuration(duration));
+                 }
+
+             } else { logEvent(`Highlight Failed: Block ${location}-${processId} not found.`, "debug"); }
+         }
+
+        async function highlightExistingBlock(processId) {
+             if (cache.has(processId)) await highlightBlock(processId, 'cache');
+             else if (ram.includes(processId)) await highlightBlock(processId, 'ram');
+             else if (swap.includes(processId)) await highlightBlock(processId, 'swap');
+             else logEvent(`Highlight Failed: ${processId} not found.`, 'debug');
+        }
+
+        async function animateBlockAppearance(processId, location, animationClass) {
+             const blockElement = document.getElementById(`block-${location}-${processId}`);
+             if (blockElement) {
+                 blockElement.style.opacity = '0'; // Start invisible if fading/sliding in
+                 await wait(20);
+                 blockElement.classList.add(animationClass);
+                 await getAnimationPromise(blockElement);
+                 blockElement.classList.remove(animationClass);
+                 blockElement.style.opacity = '1'; // Ensure fully visible
+             }
+         }
+
+        async function animateBlockRemoval(processId, location, animationClass) {
+             const blockElement = document.getElementById(`block-${location}-${processId}`);
+             if (blockElement) {
+                 blockElement.style.zIndex = '5'; // Ensure it's above others during removal anim
+                 blockElement.classList.add(animationClass);
+                 await getAnimationPromise(blockElement);
+                 // Element removed by updateDisplay later
+             }
+         }
+
+        async function animateBlockStateChange(processId, location, animationClass) {
+            const blockElement = document.getElementById(`block-${location}-${processId}`);
+            if (blockElement) {
+                blockElement.classList.add(animationClass);
+                await getAnimationPromise(blockElement);
+                // For non-infinite animations, remove the class after completion
+                if (!blockElement.style.animationIterationCount || blockElement.style.animationIterationCount !== 'infinite') {
+                     blockElement.classList.remove(animationClass);
+                }
+            }
+        }
+
+        async function animateBlockMove(processId, fromLocation, toLocation, isPageIn = false) {
+            const fromElement = document.getElementById(`block-${fromLocation}-${processId}`);
+            const toContainer = document.getElementById(toLocation);
+            if (!fromElement || !toContainer?.offsetParent) { // Check offsetParent to ensure target is visible/layouted
+                 logEvent(`Move Anim Failed: Src/Dest missing for ${processId} (${fromLocation} -> ${toLocation})`, "error", "❌");
+                 return;
+             }
+
+             // Clone
+             const movingBlock = fromElement.cloneNode(true);
+             movingBlock.id = `moving-${processId}-${Date.now()}`;
+             movingBlock.classList.add('block-moving');
+             movingBlock.style.width = `${fromElement.offsetWidth}px`;
+             movingBlock.style.height = `${fromElement.offsetHeight}px`;
+
+             // Get initial position relative to viewport
+             const startRect = fromElement.getBoundingClientRect();
+             movingBlock.style.left = `${startRect.left}px`;
+             movingBlock.style.top = `${startRect.top}px`;
+
+             // Temporarily hide original element (don't remove, updateDisplay handles data)
+             fromElement.style.opacity = '0';
+             fromElement.style.pointerEvents = 'none';
+
+             // Add clone to the main grid container for consistent positioning context
+             memoryGrid.appendChild(movingBlock);
+
+             // --- Calculate Target Position ---
+             // Estimate where the block *will* be placed by updateDisplay.
+             // Find the target container's element and estimate the position of the next block.
+             const targetSectionElement = document.getElementById(`${toLocation}-section`);
+             const targetContainerElement = document.getElementById(toLocation); // The .block-container div
+             const targetRect = targetContainerElement.getBoundingClientRect();
+
+             // Estimate Y position: assumes blocks stack vertically with gap
+             const blockHeight = movingBlock.offsetHeight;
+             const blockGap = 10; // Match .block-container gap
+             let targetBlockIndex;
+             if (toLocation === 'cache') targetBlockIndex = cache.size; // Size *before* potential add
+             else if (toLocation === 'ram') targetBlockIndex = ram.length;
+             else if (toLocation === 'swap') targetBlockIndex = swap.length;
+             else targetBlockIndex = 0;
+
+             // Calculate vertical offset within the container
+             const verticalOffsetInContainer = 5 + targetBlockIndex * (blockHeight + blockGap); // 5 is approx padding-top
+
+             // Calculate target X and Y relative to viewport
+             const targetX = targetRect.left + (targetRect.width / 2) - (startRect.width / 2); // Center horizontally
+             const targetY = targetRect.top + verticalOffsetInContainer;
+
+             // --- Trigger the Move Animation ---
+             await wait(50); // Short delay crucial for transition to register start/end states
+
+             movingBlock.style.left = `${targetX}px`;
+             movingBlock.style.top = `${targetY}px`;
+             movingBlock.style.transform = 'scale(1) rotate(0deg)'; // Animate scale/rotation back to normal
+
+             // --- Wait for Transition and Clean Up ---
+             await getAnimationPromise(movingBlock, 'transitionend'); // Specifically wait for transition
+
+             // Remove the clone
+             if(movingBlock.parentNode === memoryGrid) { // Check parent before removing
+                memoryGrid.removeChild(movingBlock);
+             }
+
+             // Make the *actual* block visible in the target location
+             // updateDisplay should have already placed the real block element
+             const finalBlockId = `block-${toLocation}-${processId}`;
+             const finalElement = document.getElementById(finalBlockId);
+             if (finalElement) {
+                  // Optional: Add a final "settle" animation
+                 finalElement.style.opacity = '0'; // May already be 0 from updateDisplay if new
+                 finalElement.style.transform = 'scale(0.8)';
+                 await wait(20);
+                 finalElement.style.transition = 'opacity var(--transition-speed-fast) ease, transform var(--transition-speed-fast) ease';
+                 finalElement.style.opacity = '1';
+                 finalElement.style.transform = 'scale(1)';
+                 await getAnimationPromise(finalElement, 'transitionend');
+                 finalElement.style.transition = ''; // Reset transition
+                 finalElement.style.transform = '';
+             } else {
+                 logEvent(`Move Anim Warning: Final block ${finalBlockId} not found after move!`, 'warning', '❓');
+                 // Ensure original block is visible again if something went wrong with target
+                 // Although updateDisplay should handle this based on the data arrays
+                 // fromElement.style.opacity = '1';
+                 // fromElement.style.pointerEvents = 'auto';
+             }
+        }
+
+
+        // --- Tooltip ---
+        function showTooltip(element, processId, type) {
+            const sizeInKB = processSizes[processId] || 0;
+            const formattedSize = formatSize(sizeInKB);
+            let content = `<strong>${processId}</strong><span>Size:</span> ${formattedSize}`;
+
+            if (type === 'ram') {
+                const freq = accessFrequency[processId] || 0;
+                const added = ramAddTime[processId] ? new Date(ramAddTime[processId]).toLocaleTimeString() : '-';
+                const isDirty = dirtyProcesses.has(processId);
+                content += `\n<span>Freq:</span> ${freq}\n<span>Added:</span> ${added}`;
+                if (isDirty) content += `\n<span style="color: var(--error-color);">State:</span> Dirty`;
+                else content += `\n<span>State:</span> Clean`;
+            } else if (type === 'cache') {
+                const cacheEntry = cache.get(processId);
+                const accessed = cacheEntry ? new Date(cacheEntry.lastAccess).toLocaleTimeString() : '-';
+                content += `\n<span>Cache Access:</span> ${accessed}`;
+            } else if (type === 'swap') {
+                content += `\n<span>Location:</span> Swap`;
+            }
+
+            tooltipDiv.innerHTML = content;
+            tooltipDiv.style.display = 'block';
+
+            const rect = element.getBoundingClientRect();
+            const tooltipRect = tooltipDiv.getBoundingClientRect(); // Measure *after* setting content
+
+            // Prefer below, then above, then try side if needed (basic)
+            let top = rect.bottom + 8 + window.scrollY;
+            let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2) + window.scrollX;
+
+            // Adjust X position first
+            const margin = 10;
+            if (left < margin) left = margin;
+            if (left + tooltipRect.width > window.innerWidth - margin) {
+                left = window.innerWidth - tooltipRect.width - margin;
+            }
+
+            // Adjust Y position if needed
+            if (top + tooltipRect.height > window.innerHeight + window.scrollY - margin) {
+                // Try placing above
+                top = rect.top - tooltipRect.height - 8 + window.scrollY;
+                // If still off-screen above (unlikely unless element is huge)
+                if (top < window.scrollY + margin) {
+                    top = rect.bottom + 8 + window.scrollY; // Revert to below (best effort)
+                }
+            }
+
+            tooltipDiv.style.top = `${top}px`;
+            tooltipDiv.style.left = `${left}px`;
+            tooltipDiv.style.opacity = '0'; // Start fade in
+             void tooltipDiv.offsetWidth; // Trigger reflow
+             tooltipDiv.style.transition = 'opacity 0.15s ease';
+             tooltipDiv.style.opacity = '1';
+        }
+
+        function hideTooltip() {
+            tooltipDiv.style.opacity = '0';
+             // Use timeout matching transition to set display none *after* fade out
+             setTimeout(() => {
+                 if (tooltipDiv.style.opacity === '0') { // Check if still hidden
+                     tooltipDiv.style.display = 'none';
+                 }
+             }, 150);
+        }
+
+        // --- Stats Display ---
+        function updateStatsDisplay() {
+            document.getElementById('cacheHits').textContent = stats.cacheHits;
+            document.getElementById('cacheAccesses').textContent = stats.cacheAccesses;
+            document.getElementById('ramHits').textContent = stats.ramHits;
+            document.getElementById('ramAccesses').textContent = stats.ramAccesses;
+            document.getElementById('pageFaults').textContent = stats.pageFaults;
+            document.getElementById('swapAccesses').textContent = stats.swapAccesses;
+            document.getElementById('tlbHits').textContent = stats.tlbHits;
+            document.getElementById('tlbMisses').textContent = stats.tlbMisses;
+            document.getElementById('totalAccesses').textContent = stats.totalAccesses;
+
+            const totalMemAccesses = stats.cacheAccesses + stats.ramAccesses + stats.swapAccesses;
+            const totalMemHits = stats.cacheHits + stats.ramHits;
+            const hitRate = totalMemAccesses > 0 ? ((totalMemHits / totalMemAccesses) * 100).toFixed(1) + '%' : 'N/A';
+            const faultRate = totalMemAccesses > 0 ? ((stats.pageFaults / totalMemAccesses) * 100).toFixed(1) + '%' : 'N/A';
+
+            document.getElementById('hitRate').textContent = hitRate;
+            document.getElementById('faultRate').textContent = faultRate;
+
+            // Update usage displays (already done in updateDisplay, but safe to repeat)
+            document.getElementById('ram-usage').textContent = `${ram.length}/${ramSize} Used`;
+            document.getElementById('swap-usage').textContent = `${swap.length}/${swapSize} Used`;
+            document.getElementById('cache-usage').textContent = `${cache.size}/${cacheSize} Used`;
+
+             document.getElementById('ram-progress').style.width = ramSize > 0 ? `${(ram.length / ramSize) * 100}%` : '0%';
+             document.getElementById('swap-progress').style.width = swapSize > 0 ? `${(swap.length / swapSize) * 100}%` : '0%';
+             document.getElementById('cache-progress').style.width = cacheSize > 0 ? `${(cache.size / cacheSize) * 100}%` : '0%';
+
+        }
+
+        // --- Simulation Speed ---
+        function updateSimSpeed() {
+            const speedSelect = document.getElementById('simSpeed');
+            simulationSpeedFactor = parseFloat(speedSelect.value);
+            document.documentElement.style.setProperty('--sim-speed-factor', simulationSpeedFactor);
+            logEvent(`Simulation speed set to ${speedSelect.options[speedSelect.selectedIndex].text}`, 'info', '⏱️');
+        }
+
+        function getSimulationDuration(baseDuration) {
+            // Ensure minimum duration for instant speed unless base is 0
+            if (simulationSpeedFactor <= 0.1 && baseDuration > 0) return 10;
+            return baseDuration * simulationSpeedFactor;
+        }
+
+        // Utility wait function respecting simulation speed
+        function wait(ms) {
+            return new Promise(resolve => setTimeout(resolve, getSimulationDuration(ms)));
+        }
+
+        // --- Utilities ---
+        function formatSize(kb) {
+            if (kb >= 1024 * 1024) return (kb / (1024 * 1024)).toFixed(1) + ' GB';
+            if (kb >= 1024) return (kb / 1024).toFixed(1) + ' MB';
+            return kb + ' KB';
+        }
+
+        function getRandomInt(min, max) {
+             min = Math.ceil(min); max = Math.floor(max);
+             return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        // --- Modal Logic ---
+         document.addEventListener('DOMContentLoaded', () => {
+             // Set initial values
              document.getElementById('ramSizeInput').value = ramSize;
              document.getElementById('swapSizeInput').value = swapSize;
              document.getElementById('cacheSizeInput').value = cacheSize;
-             initSimulation();
+             updateSimSpeed();
+
+             initSimulation(); // Initialize
+
+             // Modal setup
              const modal = document.getElementById("aboutModal");
              const btn = document.getElementById("aboutButton");
              const span = document.getElementById("closeModalButton");
-             btn.onclick = function() {
-               modal.style.display = "flex";
-             }
-             span.onclick = function() {
-               modal.style.display = "none";
-             }
-             window.onclick = function(event) {
-               if (event.target == modal) {
-                 modal.style.display = "none";
-               }
-             }
+
+             btn.onclick = () => modal.classList.add('show');
+             span.onclick = () => modal.classList.remove('show');
+             window.onclick = (event) => { if (event.target === modal) modal.classList.remove('show'); }
+             window.onkeydown = (event) => { if (event.key === 'Escape' && modal.classList.contains('show')) modal.classList.remove('show'); }
          });
+
     </script>
 </body>
 </html>
