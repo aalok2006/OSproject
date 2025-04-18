@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Hybrid Virtual Memory Manager</title>
+    <title>Hybrid Virtual Memory Manager (Priority Aware)</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;700&family=Fira+Code:wght@400&display=swap');
 
         :root {
-            --bg-color: #161b22; /* GitHub Dark Dimmed BG */
+            --bg-color: hwb(60 10% 89%); /* GitHub Dark Dimmed BG */
             --surface-color: rgba(34, 40, 49, 0.6); /* Slightly transparent surface */
             --surface-solid-color: #222831;
             --text-color: #c9d1d9; /* GitHub Dark Dimmed Text */
@@ -20,6 +20,9 @@
             --error-color: #f85149; /* GitHub Red */
             --dirty-color: #f85149; /* Red for dirty */
             --highlight-color: #fada5e; /* Brighter yellow */
+            --priority-high-color: #ff7b72; /* Light Red/Orange */
+            --priority-medium-color: #d29922; /* Yellow */
+            --priority-low-color: #768390; /* Grey */
 
             --ram-color-start: #64b5f6; /* Light Blue */
             --ram-color-end: #1976d2;   /* Darker Blue */
@@ -221,7 +224,26 @@
             z-index: 1;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
             box-shadow: var(--box-shadow-inset), 0 2px 4px rgba(0,0,0,0.2);
+            display: flex; /* Use flex to align prefix and ID */
+            align-items: center;
+            justify-content: center;
+            gap: 5px; /* Gap between prefix and ID */
         }
+
+        .block-priority-prefix {
+            font-size: 0.8em;
+            font-weight: 500;
+            padding: 1px 4px;
+            border-radius: 4px;
+            line-height: 1;
+            opacity: 0.8;
+            margin-right: 2px; /* Small space adjustment */
+        }
+
+        .block-priority-High { background-color: var(--priority-high-color); color: #fff; }
+        .block-priority-Medium { background-color: var(--priority-medium-color); color: #111; }
+        .block-priority-Low { background-color: var(--priority-low-color); color: #fff; }
+
 
         .block::before { /* Gradient overlay */
             content: '';
@@ -437,6 +459,7 @@
          .log-success { color: var(--success-color); }
          .log-info { color: var(--primary-color); }
          .log-warning { color: var(--warning-color); }
+         .log-priority { color: var(--priority-medium-color); } /* Color for priority messages */
          .log-debug { color: #6e7681; font-style: italic; } /* GitHub Dimmed Italic */
          .log-writeback { color: var(--secondary-color); } /* Purple for writeback */
 
@@ -517,6 +540,9 @@
         }
         #tooltip strong { color: var(--primary-color); font-weight: 600; display: block; margin-bottom: 5px; font-size: 1.1em;}
         #tooltip span { color: var(--text-muted-color); margin-right: 5px; }
+        #tooltip .priority-High { color: var(--priority-high-color); font-weight: bold; }
+        #tooltip .priority-Medium { color: var(--priority-medium-color); font-weight: bold; }
+        #tooltip .priority-Low { color: var(--priority-low-color); font-weight: bold; }
 
 
         /* Responsive Adjustments */
@@ -547,7 +573,7 @@
 </head>
 <body>
     <div class="main-container">
-        <h1>Advanced Hybrid Virtual Memory Manager</h1>
+        <h1>Hybrid Virtual Memory Manager (Priority Aware)</h1>
 
         <div class="panel config">
             <label for="ramSizeInput">RAM:</label>
@@ -562,7 +588,7 @@
 
         <div class="panel controls">
             <label for="algorithm">Algorithm:</label>
-            <select id="algorithm" title="Select page replacement algorithm for RAM eviction">
+            <select id="algorithm" title="Select page replacement algorithm for RAM eviction (applied within lowest priority group)">
                 <option value="fifo">FIFO</option>
                 <option value="lru">LRU</option>
                 <option value="lfu">LFU</option>
@@ -635,26 +661,27 @@
     <div id="aboutModal" class="modal">
       <div class="modal-content">
         <span class="close-button" id="closeModalButton">×</span>
-        <h2>About Advanced Hybrid VMM</h2>
+        <h2>About Hybrid Virtual Memory Manager</h2>
         <p>This simulation demonstrates concepts of a hybrid virtual memory system involving <strong>Cache</strong>, <strong>RAM</strong>, and <strong>Swap Space</strong> with enhanced features and visualizations.</p>
         <p><strong>Key Features:</strong></p>
         <ul>
             <li><strong>Memory Hierarchy:</strong> Visualizes processes in Cache (fast), RAM (medium), or Swap Space (slow).</li>
             <li><strong>Process Allocation/Access:</strong> Add/access processes, triggering placement and movement.</li>
             <li><strong>Caching:</strong> RAM hits move processes to the Cache (LRU eviction).</li>
-            <li><strong>Page Replacement Algorithms:</strong> Select FIFO, LRU, LFU, LIFO, MRU, or Random for RAM eviction.</li>
+            <li><strong><span style="color: var(--priority-medium-color);">Process Priority:</span></strong> Processes have Low, Medium, or High priority, assigned randomly.</li>
+            <li><strong>Priority-Aware Eviction:</strong> Page replacement algorithms (FIFO, LRU, etc.) primarily target the lowest-priority processes in RAM during eviction.</li>
             <li><strong><span style="color: var(--error-color);">Dirty Bit</span> Simulation:</strong> Processes in RAM can be marked 'dirty'. Evicting a dirty page simulates a slower write-back to Swap.</li>
             <li><strong><span style="color: var(--warning-color);">Thrashing Detection:</span></strong> Alerts if the recent page fault rate becomes excessively high.</li>
-            <li><strong>Process Termination:</strong> Right-click a block to remove it entirely.</li>
+            <li><strong>Process Termination:</strong> Right-click a block (with confirmation) to remove it entirely.</li>
             <li><strong>Dynamic Configuration & Speed Control:</strong> Adjust sizes and animation speed.</li>
-            <li><strong>Detailed Info & Stats:</strong> Hover for info; view hits, faults, rates, and conceptual TLB performance.</li>
+            <li><strong>Detailed Info & Stats:</strong> Hover for info (including priority); view hits, faults, rates, and conceptual TLB performance.</li>
             <li><strong>Advanced Animations:</strong> Visual feedback for movement, state changes, and events.</li>
         </ul>
         <p><strong>Interactions:</strong></p>
         <ul>
             <li>Use controls to configure, allocate, access, mark dirty, or manage memory.</li>
             <li>Click a block to select it and trigger an access.</li>
-            <li>Right-click a block to terminate the process.</li>
+            <li>Right-click a block to terminate the process (shows confirmation).</li>
             <li>Hover over blocks for detailed information via tooltips.</li>
         </ul>
          <p class="attribution">Concept By: AALOK KUMAR YADAV</p>
@@ -669,6 +696,7 @@
         const MAX_PROCESS_ID = 20;
         const MIN_PROCESS_KB = 512; // Increased min size
         const MAX_PROCESS_KB = 2 * 1024 * 1024; // Up to 2GB
+        const PRIORITIES = ['Low', 'Medium', 'High'];
 
         let ram = []; // Array of process IDs in RAM
         let swap = []; // Array of process IDs in Swap
@@ -680,6 +708,7 @@
         let accessFrequency = {}; // For LFU { processId: count }
         let ramAddTime = {}; // For FIFO { processId: timestamp }
         let processSizes = {}; // { processId: sizeInKB }
+        let processPriorities = {}; // { processId: 'Low' | 'Medium' | 'High' }
 
         // Stats
         let stats = {
@@ -714,18 +743,20 @@
             accessFrequency = {};
             ramAddTime = {};
             processSizes = {};
+            processPriorities = {}; // Reset priorities
             accessHistory = [];
 
             // Reset stats
             for (const key in stats) { stats[key] = 0; }
 
-            // Generate random sizes
+            // Generate random sizes and priorities
             for (let i = 1; i <= MAX_PROCESS_ID; i++) {
                 const processId = `P${i}`;
                 processSizes[processId] = getRandomInt(MIN_PROCESS_KB, MAX_PROCESS_KB);
+                processPriorities[processId] = PRIORITIES[getRandomInt(0, PRIORITIES.length - 1)];
             }
             logEvent("Simulation Initialized", "success", "🚀");
-            logEvent(`Generated random sizes for ${MAX_PROCESS_ID} processes (Range: ${formatSize(MIN_PROCESS_KB)} - ${formatSize(MAX_PROCESS_KB)}).`, "debug");
+            logEvent(`Generated random sizes and priorities for ${MAX_PROCESS_ID} processes.`, "debug");
             updateDisplay();
             updateStatsDisplay();
             checkThrashing(true); // Reset indicator
@@ -810,7 +841,8 @@
                 return;
             }
 
-            logEvent(`Allocating Process ${processId}...`, "info", "📥");
+            const priority = processPriorities[processId] || 'Unknown';
+            logEvent(`Allocating Process ${processId} (Priority: ${priority})...`, "info", "📥");
 
             if (ram.length < ramSize) {
                 // Direct Allocation
@@ -822,7 +854,7 @@
                 await animateBlockAppearance(processId, 'ram', 'block-fade-in');
             } else {
                 // Eviction Required
-                logEvent(`RAM full. Evicting page via ${document.getElementById("algorithm").value.toUpperCase()}...`, "warning", "⚖️");
+                logEvent(`RAM full. Evicting based on Priority then ${document.getElementById("algorithm").value.toUpperCase()}...`, "warning", "⚖️");
                 const { victimId, writebackNeeded } = await evictPage(); // Evict returns victim and if writeback happened
 
                 if (victimId) {
@@ -833,15 +865,16 @@
 
                     let evictedDestination = 'Discarded';
                     let movePromise = Promise.resolve();
+                    const victimPriority = processPriorities[victimId] || 'Unknown';
 
                     if (swap.length < swapSize) {
                         // Move Evicted to Swap
                         swap.push(victimId);
                         evictedDestination = 'Swap';
-                        logEvent(`Process ${victimId} moved to Swap.`, "info", "📦");
+                        logEvent(`Process ${victimId} (Priority: ${victimPriority}) moved to Swap.`, "info", "📦");
                         movePromise = animateBlockMove(victimId, 'ram', 'swap');
                     } else {
-                        logEvent(`Process ${victimId} evicted & discarded (Swap full).`, "warning", "🗑️");
+                        logEvent(`Process ${victimId} (Priority: ${victimPriority}) evicted & discarded (Swap full).`, "warning", "🗑️");
                     }
 
                     cleanUpTrackingData(victimId); // Clean up after move decision
@@ -850,7 +883,7 @@
                     ram.push(processId);
                     const now = Date.now();
                     updateTrackingOnAdd(processId, now);
-                    logEvent(`Process ${processId} allocated to RAM.`, "success", "✅");
+                    logEvent(`Process ${processId} (Priority: ${priority}) allocated to RAM.`, "success", "✅");
 
                     updateDisplay(); // Render new state
 
@@ -996,6 +1029,14 @@
         }
 
         async function endProcess(processId) {
+            const priority = processPriorities[processId] || 'Unknown';
+            // --- Confirmation ---
+            if (!confirm(`Are you sure you want to terminate Process ${processId} (Priority: ${priority})?`)) {
+                logEvent(`Termination cancelled for ${processId}.`, "info", "🚫");
+                return;
+            }
+            // --- End Confirmation ---
+
             logEvent(`Terminating Process ${processId}...`, "warning", "❌");
             let foundLocation = null;
             let removalPromise = Promise.resolve();
@@ -1044,6 +1085,15 @@
 
         // --- Helper Functions ---
 
+        // Convert priority string to numerical value for comparison
+        function getPriorityValue(priority) {
+            switch (priority) {
+                case 'High': return 2;
+                case 'Medium': return 1;
+                case 'Low': default: return 0;
+            }
+        }
+
         async function handlePageFault(processId, accessTime) {
             // 1. Animate removal from Swap
             await animateBlockRemoval(processId, 'swap', 'block-fade-out');
@@ -1058,12 +1108,13 @@
 
             // 2. Check for RAM Eviction
             if (ram.length >= ramSize) {
-                logEvent(`RAM full. Evicting page via ${document.getElementById("algorithm").value.toUpperCase()}...`, "warning", "⚖️");
+                logEvent(`RAM full. Evicting based on Priority then ${document.getElementById("algorithm").value.toUpperCase()}...`, "warning", "⚖️");
                 const { victimId, writebackNeeded } = await evictPage();
                 evictedProcessId = victimId;
                 writebackOccurred = writebackNeeded;
 
                 if (evictedProcessId) {
+                     const victimPriority = processPriorities[evictedProcessId] || 'Unknown';
                     // Eviction animation (fade or writeback pulse) handled in evictPage if dirty
                     if (!writebackOccurred) {
                          await animateBlockRemoval(evictedProcessId, 'ram', 'block-fade-out');
@@ -1071,10 +1122,10 @@
 
                     if (swap.length < swapSize) {
                         swap.push(evictedProcessId);
-                        logEvent(`Process ${evictedProcessId} moved to Swap.`, "info", "📦");
+                        logEvent(`Process ${evictedProcessId} (Priority: ${victimPriority}) moved to Swap.`, "info", "📦");
                         ramEvictionMovePromise = animateBlockMove(evictedProcessId, 'ram', 'swap');
                     } else {
-                        logEvent(`Process ${evictedProcessId} evicted & discarded (Swap full).`, "warning", "🗑️");
+                        logEvent(`Process ${evictedProcessId} (Priority: ${victimPriority}) evicted & discarded (Swap full).`, "warning", "🗑️");
                     }
                     cleanUpTrackingData(evictedProcessId);
                 } else {
@@ -1103,38 +1154,81 @@
         async function evictPage() {
             if (ram.length === 0) { logEvent("Eviction skipped: RAM empty.", "debug"); return { victimId: null, writebackNeeded: false }; }
 
-            const algorithm = document.getElementById("algorithm").value;
-            let victimId = null;
             let validRamProcesses = ram.filter(p => p && processPool.includes(p));
             if (validRamProcesses.length === 0) { logEvent("Eviction Failed: No valid processes in RAM.", "error", "❌"); return { victimId: null, writebackNeeded: false }; }
 
-            // --- Algorithm Logic ---
-            let candidate = validRamProcesses[0];
-            switch (algorithm) {
-                 case "fifo": victimId = validRamProcesses.reduce((oldest, p) => (ramAddTime[p] || Infinity) < (ramAddTime[oldest] || Infinity) ? p : oldest, candidate); break;
-                 case "lru":
-                     for (const p_ordered of accessOrder) { if (validRamProcesses.includes(p_ordered)) { victimId = p_ordered; break; } }
-                     if (!victimId) victimId = validRamProcesses[0];
-                     break;
-                 case "lfu":
-                     victimId = validRamProcesses.reduce((leastFreq, p) => {
-                         const freqP = accessFrequency[p] || 0; const freqLeast = accessFrequency[leastFreq] || 0;
-                         if (freqP < freqLeast) return p;
-                         if (freqP === freqLeast) return (ramAddTime[p] || Infinity) < (ramAddTime[leastFreq] || Infinity) ? p : leastFreq;
-                         return leastFreq;
-                     }, candidate);
-                     break;
-                 case "lifo": victimId = validRamProcesses.reduce((newest, p) => (ramAddTime[p] || 0) > (ramAddTime[newest] || 0) ? p : newest, candidate); break;
-                 case "mru":
-                     for (let i = accessOrder.length - 1; i >= 0; i--) { if (validRamProcesses.includes(accessOrder[i])) { victimId = accessOrder[i]; break; } }
-                     if (!victimId) victimId = validRamProcesses[validRamProcesses.length - 1];
-                     break;
-                 case "random": default: victimId = validRamProcesses[Math.floor(Math.random() * validRamProcesses.length)]; break;
+            // --- Priority-Based Selection ---
+            let minPriorityLevel = Infinity;
+            validRamProcesses.forEach(p => {
+                 const prioValue = getPriorityValue(processPriorities[p]);
+                 if (prioValue < minPriorityLevel) {
+                     minPriorityLevel = prioValue;
+                 }
+             });
+
+            let lowestPriorityCandidates = validRamProcesses.filter(p => getPriorityValue(processPriorities[p]) === minPriorityLevel);
+            const lowestPriorityString = PRIORITIES[minPriorityLevel] || 'Low';
+            logEvent(`Eviction candidates restricted to ${lowestPriorityString} priority processes. Count: ${lowestPriorityCandidates.length}`, "log-priority", "⚖️");
+
+            if (lowestPriorityCandidates.length === 0) {
+                 logEvent("Error: Could not find lowest priority candidates despite RAM being non-empty.", "error", "❌");
+                 // Fallback to considering all valid processes if filtering fails unexpectedly
+                 lowestPriorityCandidates = validRamProcesses;
+                 logEvent("Fallback: Considering all RAM processes for eviction.", "warning", "⚠️");
             }
 
+            // --- Algorithm Logic (Applied to lowest priority candidates) ---
+            const algorithm = document.getElementById("algorithm").value;
+            let victimId = null;
+
+            if (lowestPriorityCandidates.length > 0) {
+                 let candidate = lowestPriorityCandidates[0]; // Starting point for reductions
+                 switch (algorithm) {
+                     case "fifo": victimId = lowestPriorityCandidates.reduce((oldest, p) => (ramAddTime[p] || Infinity) < (ramAddTime[oldest] || Infinity) ? p : oldest, candidate); break;
+                     case "lru":
+                         // Iterate through global access order, find the first match *within* the candidates
+                         victimId = null;
+                         for (const p_ordered of accessOrder) {
+                              if (lowestPriorityCandidates.includes(p_ordered)) {
+                                  victimId = p_ordered;
+                                  break;
+                              }
+                         }
+                         // Fallback if no candidate found in accessOrder (e.g., all added at same time and never accessed)
+                         if (!victimId) victimId = lowestPriorityCandidates.reduce((oldest, p) => (ramAddTime[p] || Infinity) < (ramAddTime[oldest] || Infinity) ? p : oldest, candidate); // FIFO tie-breaker for LRU
+                         break;
+                     case "lfu":
+                          victimId = lowestPriorityCandidates.reduce((leastFreq, p) => {
+                             const freqP = accessFrequency[p] || 0;
+                             const freqLeast = accessFrequency[leastFreq] || 0;
+                             if (freqP < freqLeast) return p;
+                             if (freqP === freqLeast) { // Tie-breaker: FIFO
+                                 return (ramAddTime[p] || Infinity) < (ramAddTime[leastFreq] || Infinity) ? p : leastFreq;
+                             }
+                             return leastFreq;
+                         }, candidate);
+                         break;
+                     case "lifo": victimId = lowestPriorityCandidates.reduce((newest, p) => (ramAddTime[p] || 0) > (ramAddTime[newest] || 0) ? p : newest, candidate); break;
+                     case "mru":
+                          // Iterate through global access order backwards, find the first match *within* the candidates
+                         victimId = null;
+                         for (let i = accessOrder.length - 1; i >= 0; i--) {
+                             if (lowestPriorityCandidates.includes(accessOrder[i])) {
+                                 victimId = accessOrder[i];
+                                 break;
+                             }
+                         }
+                         // Fallback if no candidate found in accessOrder
+                         if (!victimId) victimId = lowestPriorityCandidates.reduce((newest, p) => (ramAddTime[p] || 0) > (ramAddTime[newest] || 0) ? p : newest, candidate); // LIFO tie-breaker for MRU
+                         break;
+                     case "random": default: victimId = lowestPriorityCandidates[Math.floor(Math.random() * lowestPriorityCandidates.length)]; break;
+                 }
+            }
+
+            // --- Process the Victim ---
             let writebackNeeded = false;
             if (victimId) {
-                logEvent(`Eviction choice (${algorithm.toUpperCase()}): Process ${victimId}`, "debug");
+                logEvent(`Eviction choice (${algorithm.toUpperCase()} within ${lowestPriorityString} priority): Process ${victimId}`, "debug");
                 const ramIndex = ram.indexOf(victimId);
                 if (ramIndex > -1) {
                     // --- Dirty Check ---
@@ -1156,7 +1250,7 @@
                      victimId = null; // Failed
                 }
             } else {
-                 logEvent(`Eviction failed: No victim determined.`, "error", "❌");
+                 logEvent(`Eviction failed: No victim determined from candidate pool.`, "error", "❌");
             }
             return { victimId, writebackNeeded };
         }
@@ -1171,6 +1265,7 @@
                  cache.delete(processId);
                  logEvent(`Process ${processId} removed from cache during cleanup.`, "debug");
              }
+             // Note: We keep processSizes and processPriorities as they are persistent attributes
         }
 
         function updateTrackingOnAdd(processId, timestamp) {
@@ -1294,7 +1389,7 @@
                  progressBars[section].style.width = `${percentage}%`;
              });
 
-             // Attach event listeners using delegation on memoryGrid
+             // Re-attach event listeners using delegation on memoryGrid
              memoryGrid.removeEventListener('click', handleBlockEvent);
              memoryGrid.removeEventListener('contextmenu', handleBlockEvent);
              memoryGrid.removeEventListener('mouseover', handleBlockEvent);
@@ -1327,7 +1422,7 @@
                      break;
                  case 'contextmenu':
                      event.preventDefault();
-                     logEvent(`Right-clicked ${processId}, terminating...`, 'debug');
+                     // Confirmation is handled inside endProcess
                      endProcess(processId);
                      break;
                  case 'mouseover':
@@ -1349,7 +1444,16 @@
              if (type === 'ram' && dirtyProcesses.has(processId)) {
                  className += ' block-dirty';
              }
-             return `<div class="${className}" id="block-${type}-${processId}" data-process-id="${processId}">${processId}</div>`;
+
+             const priority = processPriorities[processId] || 'Medium'; // Default to medium if somehow unknown
+             const priorityShort = priority.charAt(0); // L, M, H
+             const priorityClass = `block-priority-${priority}`;
+             const priorityPrefixHTML = `<span class="block-priority-prefix ${priorityClass}">${priorityShort}</span>`;
+
+             return `<div class="${className}" id="block-${type}-${processId}" data-process-id="${processId}">
+                         ${priorityPrefixHTML}
+                         <span class="block-id">${processId}</span>
+                     </div>`;
          }
 
         // --- Logging ---
@@ -1365,6 +1469,7 @@
                 case 'error':   typeClass = 'log-error';   if(!logIcon) logIcon = '❌'; break;
                 case 'debug':   typeClass = 'log-debug';   if(!logIcon) logIcon = '🐞'; break;
                 case 'log-writeback': typeClass = 'log-writeback'; if(!logIcon) logIcon = '💾'; break; // Specific for writeback
+                case 'log-priority': typeClass = 'log-priority'; if(!logIcon) logIcon = '⚖️'; break; // Specific for priority
                 case 'info': default: typeClass = 'log-info'; if(!logIcon) logIcon = 'ℹ️'; break;
             }
 
@@ -1381,37 +1486,61 @@
         function getAnimationPromise(element, eventName = 'animationend') {
              return new Promise(resolve => {
                  const handler = (event) => {
-                     if (event.target === element) {
+                     // Ensure the event is for the element itself and not a child bubbling up
+                     if (event.target === element && event.animationName === element.style.animationName) {
                          element.removeEventListener(eventName, handler);
+                         element.style.animationName = ''; // Clean up style potentially set by JS
                          resolve();
+                     } else if (event.target === element && event.propertyName) { // For transitionend
+                         element.removeEventListener(eventName, handler);
+                          resolve();
                      }
                  };
+                 // If we manually set animationName, use that to filter events
+                 if(element.style.animationName) {
+                    // Handled in the handler
+                 }
                  element.addEventListener(eventName, handler);
-                 // Safety timeout
+
+                 // Safety timeout: Check if animation/transition duration is defined
+                 let duration = 0;
+                 const computedStyle = getComputedStyle(element);
+                 if (eventName === 'animationend') {
+                    duration = parseFloat(computedStyle.animationDuration) * 1000;
+                 } else if (eventName === 'transitionend') {
+                    duration = parseFloat(computedStyle.transitionDuration) * 1000;
+                 }
+                 duration = Math.max(duration, 50); // Minimum timeout
+
                  setTimeout(() => {
                      element.removeEventListener(eventName, handler);
-                     resolve();
-                 }, getSimulationDuration(1500)); // Increased safety margin
+                     element.style.animationName = '';
+                     resolve(); // Resolve regardless after a safety duration + buffer
+                 }, duration + getSimulationDuration(500)); // Add buffer
              });
          }
 
         async function highlightBlock(processId, location, animationClass = 'block-highlight', duration = 700) {
              const blockElement = document.getElementById(`block-${location}-${processId}`);
              if (blockElement) {
-                 blockElement.classList.remove('block-highlight', 'block-write-back', 'block-marked-dirty'); // Clear potentially interfering anims
-                 void blockElement.offsetWidth; // Reflow
+                 // Temporarily remove other potentially interfering animations
+                 blockElement.classList.remove('block-highlight', 'block-write-back', 'block-marked-dirty', 'block-fade-in', 'block-fade-out', 'block-terminate');
+                 void blockElement.offsetWidth; // Force reflow
+
                  blockElement.classList.add(animationClass);
+                 blockElement.style.animationName = animationClass; // For specific event matching
+
                  await getAnimationPromise(blockElement);
-                 // Don't remove immediately, let CSS handle removal if animation is non-infinite
-                 // Only remove if it's a pulse style animation after duration
-                 if (animationClass.includes('pulse') || animationClass.includes('highlight')) {
-                      setTimeout(() => {
-                         if(blockElement) blockElement.classList.remove(animationClass);
-                     }, getSimulationDuration(duration));
+
+                 // Remove class after animation completes for non-infinite animations
+                 const computedStyle = getComputedStyle(blockElement);
+                 if (!computedStyle.animationIterationCount || computedStyle.animationIterationCount !== 'infinite') {
+                     blockElement.classList.remove(animationClass);
                  }
 
              } else { logEvent(`Highlight Failed: Block ${location}-${processId} not found.`, "debug"); }
          }
+
 
         async function highlightExistingBlock(processId) {
              if (cache.has(processId)) await highlightBlock(processId, 'cache');
@@ -1423,9 +1552,10 @@
         async function animateBlockAppearance(processId, location, animationClass) {
              const blockElement = document.getElementById(`block-${location}-${processId}`);
              if (blockElement) {
-                 blockElement.style.opacity = '0'; // Start invisible if fading/sliding in
-                 await wait(20);
+                 blockElement.style.opacity = '0'; // Start invisible
+                 await wait(20); // Allow style to apply
                  blockElement.classList.add(animationClass);
+                 blockElement.style.animationName = animationClass; // For specific event matching
                  await getAnimationPromise(blockElement);
                  blockElement.classList.remove(animationClass);
                  blockElement.style.opacity = '1'; // Ensure fully visible
@@ -1437,20 +1567,23 @@
              if (blockElement) {
                  blockElement.style.zIndex = '5'; // Ensure it's above others during removal anim
                  blockElement.classList.add(animationClass);
+                 blockElement.style.animationName = animationClass; // For specific event matching
                  await getAnimationPromise(blockElement);
-                 // Element removed by updateDisplay later
+                 // Actual removal from DOM happens during the next updateDisplay
              }
          }
 
         async function animateBlockStateChange(processId, location, animationClass) {
             const blockElement = document.getElementById(`block-${location}-${processId}`);
             if (blockElement) {
-                blockElement.classList.add(animationClass);
-                await getAnimationPromise(blockElement);
-                // For non-infinite animations, remove the class after completion
-                if (!blockElement.style.animationIterationCount || blockElement.style.animationIterationCount !== 'infinite') {
-                     blockElement.classList.remove(animationClass);
-                }
+                 blockElement.classList.add(animationClass);
+                 blockElement.style.animationName = animationClass; // For specific event matching
+                 await getAnimationPromise(blockElement);
+                 // For non-infinite animations, remove the class after completion
+                 const computedStyle = getComputedStyle(blockElement);
+                 if (!computedStyle.animationIterationCount || computedStyle.animationIterationCount === '1') {
+                      blockElement.classList.remove(animationClass);
+                 }
             }
         }
 
@@ -1462,7 +1595,7 @@
                  return;
              }
 
-             // Clone
+             // Clone the block for the animation
              const movingBlock = fromElement.cloneNode(true);
              movingBlock.id = `moving-${processId}-${Date.now()}`;
              movingBlock.classList.add('block-moving');
@@ -1474,31 +1607,33 @@
              movingBlock.style.left = `${startRect.left}px`;
              movingBlock.style.top = `${startRect.top}px`;
 
-             // Temporarily hide original element (don't remove, updateDisplay handles data)
-             fromElement.style.opacity = '0';
+             // Temporarily hide original element (don't remove, updateDisplay handles data changes)
+             fromElement.style.visibility = 'hidden'; // Use visibility to preserve layout space
              fromElement.style.pointerEvents = 'none';
 
              // Add clone to the main grid container for consistent positioning context
              memoryGrid.appendChild(movingBlock);
 
              // --- Calculate Target Position ---
-             // Estimate where the block *will* be placed by updateDisplay.
-             // Find the target container's element and estimate the position of the next block.
-             const targetSectionElement = document.getElementById(`${toLocation}-section`);
-             const targetContainerElement = document.getElementById(toLocation); // The .block-container div
+             // Estimate where the block *will* be placed by the next updateDisplay.
+             const targetContainerElement = document.getElementById(toLocation);
              const targetRect = targetContainerElement.getBoundingClientRect();
+             const targetScrollTop = targetContainerElement.scrollTop; // Account for scroll within target container
 
-             // Estimate Y position: assumes blocks stack vertically with gap
+             // Estimate target index based on current state *before* updateDisplay adds the item visually
+             let targetBlockIndex;
+             if (toLocation === 'cache') targetBlockIndex = cache.size - (cache.has(processId) ? 0 : 1) ; // If added, it's at the new size-1 index
+             else if (toLocation === 'ram') targetBlockIndex = ram.length - 1;
+             else if (toLocation === 'swap') targetBlockIndex = swap.length - 1;
+             else targetBlockIndex = 0;
+             targetBlockIndex = Math.max(0, targetBlockIndex); // Ensure non-negative
+
              const blockHeight = movingBlock.offsetHeight;
              const blockGap = 10; // Match .block-container gap
-             let targetBlockIndex;
-             if (toLocation === 'cache') targetBlockIndex = cache.size; // Size *before* potential add
-             else if (toLocation === 'ram') targetBlockIndex = ram.length;
-             else if (toLocation === 'swap') targetBlockIndex = swap.length;
-             else targetBlockIndex = 0;
+             const containerPaddingTop = 5; // Match .block-container padding-top
 
-             // Calculate vertical offset within the container
-             const verticalOffsetInContainer = 5 + targetBlockIndex * (blockHeight + blockGap); // 5 is approx padding-top
+             // Calculate vertical offset within the container, accounting for scroll
+             const verticalOffsetInContainer = containerPaddingTop + targetBlockIndex * (blockHeight + blockGap) - targetScrollTop;
 
              // Calculate target X and Y relative to viewport
              const targetX = targetRect.left + (targetRect.width / 2) - (startRect.width / 2); // Center horizontally
@@ -1515,17 +1650,19 @@
              await getAnimationPromise(movingBlock, 'transitionend'); // Specifically wait for transition
 
              // Remove the clone
-             if(movingBlock.parentNode === memoryGrid) { // Check parent before removing
-                memoryGrid.removeChild(movingBlock);
+             if(movingBlock.parentNode === memoryGrid) {
+                 memoryGrid.removeChild(movingBlock);
              }
 
              // Make the *actual* block visible in the target location
-             // updateDisplay should have already placed the real block element
+             // updateDisplay should have already rendered the real block element in the correct place
              const finalBlockId = `block-${toLocation}-${processId}`;
              const finalElement = document.getElementById(finalBlockId);
              if (finalElement) {
-                  // Optional: Add a final "settle" animation
-                 finalElement.style.opacity = '0'; // May already be 0 from updateDisplay if new
+                 finalElement.style.visibility = 'visible'; // Make sure it's visible now
+                 finalElement.style.pointerEvents = 'auto';
+                 // Optional: Add a final "settle" animation
+                 finalElement.style.opacity = '0';
                  finalElement.style.transform = 'scale(0.8)';
                  await wait(20);
                  finalElement.style.transition = 'opacity var(--transition-speed-fast) ease, transform var(--transition-speed-fast) ease';
@@ -1536,9 +1673,9 @@
                  finalElement.style.transform = '';
              } else {
                  logEvent(`Move Anim Warning: Final block ${finalBlockId} not found after move!`, 'warning', '❓');
-                 // Ensure original block is visible again if something went wrong with target
-                 // Although updateDisplay should handle this based on the data arrays
-                 // fromElement.style.opacity = '1';
+                 // Fallback: ensure original block is visible if something went wrong
+                 // (though updateDisplay should handle the final state based on data)
+                 // fromElement.style.visibility = 'visible';
                  // fromElement.style.pointerEvents = 'auto';
              }
         }
@@ -1548,7 +1685,11 @@
         function showTooltip(element, processId, type) {
             const sizeInKB = processSizes[processId] || 0;
             const formattedSize = formatSize(sizeInKB);
-            let content = `<strong>${processId}</strong><span>Size:</span> ${formattedSize}`;
+            const priority = processPriorities[processId] || 'Unknown';
+            let content = `<strong>${processId}</strong>`
+                        + `<span>Size:</span> ${formattedSize}`
+                        + `\n<span>Priority:</span> <span class="priority-${priority}">${priority}</span>`;
+
 
             if (type === 'ram') {
                 const freq = accessFrequency[processId] || 0;
