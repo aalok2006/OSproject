@@ -7,7 +7,8 @@ A dynamic, web-based visual simulator demonstrating the principles of a hybrid v
 
 enhanced to 
 
-![image](https://github.com/user-attachments/assets/cedbcfe0-863a-4167-a72c-497dd00c8eba)
+![image](https://github.com/user-attachments/assets/82b9986a-3edb-4cd5-821f-b4261deeb529)
+
 
 ## Features 🚀
 
