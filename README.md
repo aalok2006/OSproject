@@ -16,24 +16,24 @@ enhanced to
 
 ## Features 🚀
 
-*   🧠 **Memory Hierarchy Visualization:** Clearly displays processes residing in Cache (fastest), RAM, and Swap Space (disk simulation).
-*   ⚙️ **Dynamic Configuration:** Easily adjust the sizes of RAM, Swap, and Cache via the UI (resets the simulation).
-*   ➕ **Process Allocation:** Simulate adding new processes (pages) to memory. Handles RAM-full scenarios using selected eviction algorithms.
-*   👆 **Process Access Simulation:** Simulate accessing processes. Tracks Cache Hits, RAM Hits, and Page Faults (requiring loading from Swap).
-*   🔄 **Page Replacement Algorithms:** Implement and switch between multiple algorithms for RAM eviction:
-    *   FIFO (First-In, First-Out)
-    *   LRU (Least Recently Used)
-    *   LFU (Least Frequently Used)
-    *   LIFO (Last-In, First-Out)
-    *   MRU (Most Recently Used)
-    *   Random
-*   ⚡ **Caching:** Includes a simple Cache layer (using LRU for its own eviction) to demonstrate faster access for recently used items from RAM.
-*   💾 **Swapping:** Evicted pages from RAM are moved to Swap Space if available, otherwise discarded.
-*   ❌ **Process Termination:** Right-click any process block to terminate it and remove it from all memory levels.
-*   📊 **Usage Tracking:** Displays current usage counts for each memory level. Hover over blocks for details (size, frequency, access times).
-*   📜 **Real-time System Log:** Provides detailed, timestamped feedback on all operations, hits, misses, faults, evictions, and errors.
-*   ℹ️ **Informational Modal:** Includes an "About" section explaining the concepts and simulation features.
-*   🎨 **Modern UI:** Clean, themed interface built with HTML, CSS (including CSS Variables), and vanilla JavaScript.
+*   💾 **Memory Hierarchy Visualization:** Clearly displays processes residing in Cache, RAM (Main Memory), and Swap Space.
+*   ⚙️ **Dynamic Configuration:** Set the size (number of frames/entries) for RAM, Swap, and Cache before starting or reset the simulation.
+*   🔄 **Page Replacement Algorithms:** Select from multiple algorithms (FIFO, LRU, LFU, LIFO, MRU, Random) to handle RAM eviction.
+*   👑 **Priority-Aware Eviction:** Processes are assigned a random priority (Low, Medium, High). Eviction algorithms primarily target the lowest priority pages first.
+*   ✏️ **Dirty Bit Simulation:** Mark processes in RAM as 'dirty' (modified). Evicting a dirty page triggers a visual "Write-Back" animation with a simulated delay before moving to Swap.
+*   ⚡ **Cache Simulation:** Processes accessed in RAM are moved to a simulated Cache (using LRU for cache eviction). Cache hits provide faster access.
+*   🚨 **Thrashing Detection:** Monitors the recent page fault rate and displays a visual alert if it exceeds a defined threshold, indicating potential thrashing.
+*   👆 **Interactive Process Blocks:**
+    *   Click a block to simulate accessing that process.
+    *   Right-click a block (with confirmation) to terminate the process entirely from the system.
+    *   Hover over blocks for detailed tooltips (Process ID, Size, Priority, State, Access/Add Times).
+*   📊 **Real-time Statistics:** Tracks and displays Cache Hits/Accesses, RAM Hits/Accesses, Page Faults/Swap Accesses, conceptual TLB Hits/Misses, Total Accesses, Hit Rate, and Fault Rate.
+*   📜 **System Event Log:** Provides a detailed, timestamped log of all actions (allocation, access, eviction, write-back, errors, etc.).
+*   🎬 **Visual Animations:** Smooth animations for block allocation, access highlights, state changes (dirty, write-back), termination, and movement between memory levels.
+*   ⏱️ **Simulation Speed Control:** Adjust the speed of animations (Slow, Normal, Fast, Instant) for better observation or quicker results.
+*   🎨 **Modern UI Theme:** Features a dark, "glassmorphism" inspired theme with clear visual distinction between memory areas.
+*   📱 **Responsive Design:** Adapts layout for usability on different screen sizes (desktop, tablet, mobile).
+*   ℹ️ **Informative 'About' Modal:** Explains the simulation's features and interactions.
 
 ## Running the Simulation 🏃‍♀️
 
@@ -49,31 +49,58 @@ This is a purely front-end application built with standard web technologies. No 
 
 ## Usage & Interaction 🛠️
 
-1.  **(Optional) Configure:** Adjust RAM, Swap, and Cache sizes using the input fields and click "Apply Config & Reset".
-2.  **Select Algorithm:** Choose a page replacement algorithm from the dropdown menu.
-3.  **Enter Process ID (Optional):** Type a specific Process ID (e.g., `P5`) into the input field for allocation or access. If left blank for allocation/access, a random available/existing process might be chosen.
-4.  **Use Control Buttons:**
-    *   `Allocate Process`: Adds the specified (or random) process to memory, handling eviction if RAM is full.
-    *   `Access Process`: Simulates accessing the specified (or random) process, triggering cache/RAM hits or page faults.
-    *   `Add to Cache`: Manually attempts to add the specified process (if in RAM) to the cache.
-    *   `Clear Cache`: Empties the cache.
-    *   `Reset Simulation`: Resets memory and logs to the initial state based on current configuration.
-    *   `About`: Opens the informational modal.
-5.  **Interact with Blocks:**
-    *   **Left-Click:** Equivalent to clicking the "Access Process" button for that specific process.
-    *   **Right-Click:** Terminates the process, removing it from Cache, RAM, and Swap.
-    *   **Hover:** Displays a tooltip with details about the process (Size, Frequency, Timestamps).
-6.  **Monitor the Log:** Observe the sequence of events, hits, misses, and algorithm decisions in the System Log panel.
+1.  **Configure (Optional):** Use the top input fields (RAM, Swap, Cache size) and click "Apply & Reset" to change the memory layout. This resets the simulation.
+2.  **Select Algorithm:** Choose a page replacement algorithm from the dropdown menu. This algorithm is used when RAM is full and a process needs to be evicted (applied within the lowest priority group).
+3.  **Simulation Speed:** Adjust the animation speed using the "Speed" dropdown.
+4.  **Allocate Process:**
+    *   Enter a specific Process ID (e.g., `P5`) in the input field, or leave it blank for a random available process.
+    *   Click "Allocate". The process will be placed in RAM if space is available, or it will trigger an eviction from RAM (potentially moving the victim to Swap).
+5.  **Access Process:**
+    *   Enter a Process ID that *exists* in Cache, RAM, or Swap, or leave blank for a random existing process. Alternatively, click directly on a process block in the UI.
+    *   Click "Access".
+        *   Cache Hit: Highlights the block in Cache.
+        *   RAM Hit: Highlights the block in RAM and moves it to Cache (evicting from Cache if full).
+        *   Page Fault (Swap Hit): Triggers eviction from RAM (if needed), moves the process from Swap to RAM, and then to Cache. Log shows details.
+6.  **Mark Dirty (Write):**
+    *   Enter a Process ID currently in RAM.
+    *   Click "Write/Dirty". The process block in RAM will be visually marked as dirty.
+7.  **Manual Cache Add:**
+    *   Enter a Process ID currently in RAM.
+    *   Click "To Cache". The process is added to the cache (following cache eviction rules).
+8.  **Clear Cache:** Click "Clear Cache" to remove all entries from the cache.
+9.  **Reset Simulation:** Click "Reset Sim" to return to the initial empty state with current size configurations.
+10. **Terminate Process:** Right-click on any process block (Cache, RAM, or Swap). A confirmation dialog will appear. If confirmed, the process is removed entirely.
+11. **Observe:** Watch the blocks move, the stats update, and the log populate with events. Hover over blocks to see their details. Note the "Thrashing Alert" if page faults become too frequent.
+12. **About:** Click the "About" button for a summary of features.
 
 ## Example Workflow 🚶‍♂️
 
-1.  Keep default sizes (RAM=4, Swap=4, Cache=3) and select `LRU` algorithm.
-2.  Allocate `P1`, `P2`, `P3`, `P4`. Observe they fill the RAM.
-3.  Allocate `P5`. Observe RAM is full. `P1` (the LRU) should be evicted to Swap. `P5` takes its place in RAM.
-4.  Access `P2`. Observe RAM Hit. `P2` should now be in the Cache.
-5.  Access `P1`. Observe Page Fault. `P1` is loaded from Swap into RAM. Another process (likely `P3` if `P2, P4, P5` were accessed more recently or added later) is evicted from RAM to Swap. `P1` is added to Cache.
-6.  Access `P2` again. Observe Cache Hit.
-7.  Right-click on `P4` in RAM/Cache/Swap. Observe it disappears from all memory levels and the log confirms termination.
+1.  Open the `memory_manager.html` file in your browser.
+2.  Keep default sizes (4 RAM, 4 Swap, 3 Cache) and select "LRU" algorithm.
+3.  **Allocate P1:** Enter `P1`, click "Allocate". (P1 appears in RAM).
+4.  **Allocate P2, P3, P4:** Allocate them similarly. (RAM is now full).
+5.  **Access P1:** Enter `P1`, click "Access". (P1 highlights in RAM, then appears in Cache).
+6.  **Access P2:** Enter `P2`, click "Access". (P2 highlights in RAM, then appears in Cache).
+7.  **Allocate P5:** Enter `P5`, click "Allocate".
+    *   Log shows RAM is full, initiating LRU eviction among lowest priority pages.
+    *   Assume P3 is the victim (LRU, lowest priority). P3 moves from RAM to Swap (animation).
+    *   P5 appears in RAM (animation).
+8.  **Mark P2 Dirty:** Enter `P2`, click "Write/Dirty". (P2 block in RAM gets dirty indicator).
+9.  **Allocate P6:** Enter `P6`, click "Allocate".
+    *   Assume P4 is the LRU victim this time. P4 moves RAM -> Swap.
+    *   P6 appears in RAM.
+10. **Allocate P7:** Enter `P7`, click "Allocate".
+    *   Assume P2 (the dirty one) is now the LRU victim.
+    *   Log indicates write-back. P2 block pulses, simulates delay.
+    *   P2 moves RAM -> Swap (animation).
+    *   P7 appears in RAM.
+11. **Access P3 (Page Fault):** Enter `P3`, click "Access".
+    *   Log shows Page Fault.
+    *   Assume P1 is now LRU victim in RAM (clean). P1 moves RAM -> Swap.
+    *   P3 moves Swap -> RAM (animation).
+    *   P3 is then added to Cache (animation).
+12. **Terminate P5:** Right-click the P5 block (wherever it is), confirm. (P5 disappears with animation).
+13. **Observe Stats:** Watch the Hit/Fault counts and rates change throughout the process.
 
 ## Technology Stack 💻
 
@@ -83,21 +110,26 @@ This is a purely front-end application built with standard web technologies. No 
 
 ## Key Code Concepts ✨
 
-*   **Memory Representation:** Arrays (`ram`, `swap`) and a `Map` (`cache`) store the process IDs present in each level.
-*   **State Tracking:** Objects (`accessFrequency`, `ramAddTime`) and an array (`accessOrder`) store metadata needed for replacement algorithms (LRU, LFU, FIFO).
-*   **Page Replacement Logic:** The `evictPage()` function implements the core logic using a `switch` statement based on the selected algorithm.
-*   **Event Handling:** Functions like `allocateProcess()`, `accessProcess()`, `handlePageFault()` manage the core simulation steps.
-*   **DOM Manipulation:** `updateDisplay()` function dynamically creates/updates the visual blocks in the UI based on the current state of `ram`, `swap`, and `cache`.
-*   **Logging:** `logEvent()` function formats and appends messages to the system log panel with appropriate styling.
+*   **State Management:** Core simulation state (RAM/Swap contents, Cache map, dirty status, tracking data, stats) managed using global JavaScript variables and data structures (Arrays, Map, Set, Objects).
+*   **Memory Representation:** `ram` and `swap` are arrays of process IDs. `cache` is a `Map` storing `{ data, lastAccess }`. `dirtyProcesses` is a `Set`.
+*   **Algorithm Implementation:** Page replacement logic is encapsulated within the `evictPage` function, using a `switch` statement based on the selected algorithm and filtering candidates by priority.
+*   **Priority Handling:** `getPriorityValue` function converts priority strings to numbers for comparison during eviction candidate selection.
+*   **Dynamic Rendering:** `updateDisplay` function clears and redraws the memory sections based on the current state arrays/maps, creating block HTML using `createBlockHTML`.
+*   **Event Handling:** Uses delegated event listeners on the `memoryGrid` container to handle clicks, right-clicks, and hovers on dynamically created blocks efficiently.
+*   **Animation Orchestration:** Uses `async/await` with helper functions (`wait`, `getAnimationPromise`) and CSS classes to manage the timing and sequence of visual effects for highlights, fades, moves (`animateBlockMove`), and state changes.
+*   **Thrashing Detection:** `checkThrashing` function calculates fault rate over a recent history (`accessHistory`) and toggles the UI indicator.
+*   **Tooltip Logic:** `showTooltip` and `hideTooltip` dynamically generate and position tooltips based on block data and mouse position.
+*   **Modularity:** Logic is broken down into functions for specific tasks (allocation, access, eviction, logging, updating display, handling animations, etc.).
 
 ## Future Enhancements / Todo 📝
 
-*   📈 Add more detailed statistics (Hit/Miss Ratios, Page Fault Rate).
-*   🎨 Visualize process sizes within blocks.
-*   ⏱️ Add simulation speed control (step-by-step or variable speed).
-*   💾 Option to save/load simulation state.
-*   🔄 Implement additional algorithms (e.g., Clock, Second Chance).
-*   📑 Support for multiple independent processes/address spaces (more advanced).
+*   📈 More advanced visualizations (e.g., timeline graph of memory access).
+*   💾 Option to save/load simulation state using `localStorage`.
+*   ⚙️ Add more Page Replacement Algorithms (e.g., Clock, Optimal).
+*   🧩 Implement variable process sizes affecting allocation (currently informational).
+*   📊 More detailed performance comparison metrics between algorithms.
+*   📜 Allow scripting or batch processing of access patterns.
+*   🎨 UI Theme customization options.
 
 ## Contribution 🤝
 
