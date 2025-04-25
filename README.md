@@ -104,29 +104,39 @@ This is a purely front-end application built with standard web technologies. No 
 
 ## Technology Stack 💻
 
-This application is built primarily using the Java SE platform and its standard libraries, with a focus on the Swing GUI toolkit.
+This project consists of a primary desktop simulation application built with Java Swing and a simple HTML webpage for distribution.
+
+**1. Simulation Application:**
 
 *   **Core Language:**
-    *   **Java:** The fundamental programming language used (likely Java 8+ due to the use of Streams and Lambdas).
+    *   **Java:** (SE 8+ likely, based on Streams/Lambdas usage)
 *   **GUI Framework:**
-    *   **Java Swing:** The primary framework for building the graphical user interface.
-        *   Core Components: `JFrame`, `JPanel`, `JButton`, `JLabel`, `JSpinner`, `JComboBox`, `JTextPane`, `JProgressBar`, `JScrollPane`, `JDialog`, `JLayeredPane`.
-        *   Layout Managers: `BorderLayout`, `FlowLayout`, `GridLayout`, `BoxLayout`.
-        *   Event Handling: `ActionListener`, `MouseAdapter`, `ComponentAdapter` for user interaction and component events.
-        *   Custom Painting: Overriding `paintComponent` with `Graphics2D` for custom block appearance, gradients (`GradientPaint`), and transparency (`AlphaComposite`).
-        *   Threading: `SwingUtilities.invokeLater` for EDT safety, `SwingWorker` for background tasks and animations, `javax.swing.Timer` for animation scheduling.
-        *   Borders: `LineBorder`, `EmptyBorder`, `CompoundBorder`, `MatteBorder` for component styling.
-        *   Styled Text: `StyledDocument` and `StyleConstants` for coloring/styling text in the `JTextPane` log.
-        *   Look and Feel: Basic usage of `UIManager` to attempt setting the Nimbus Look and Feel.
-    *   **Java AWT (Abstract Window Toolkit):** The underlying toolkit used by Swing.
-        *   Core Classes: `Color`, `Dimension`, `Font`, `Graphics`, `Graphics2D`, `Point`, `Insets`.
-        *   Event Model: Foundation for Swing's event handling.
+    *   **Java Swing:**
+        *   *Core Components:* `JFrame`, `JPanel`, `JButton`, `JLabel`, `JSpinner`, `JComboBox`, `JTextPane`, `JProgressBar`, `JScrollPane`, `JDialog`, `JLayeredPane`.
+        *   *Layout Managers:* `BorderLayout`, `FlowLayout`, `GridLayout`, `BoxLayout`.
+        *   *Event Handling:* `ActionListener`, `MouseAdapter`, `ComponentAdapter`.
+        *   *Custom Painting:* Overriding `paintComponent` with `Graphics2D`, `GradientPaint`, `AlphaComposite`.
+        *   *Threading:* `SwingUtilities.invokeLater`, `SwingWorker`, `javax.swing.Timer`.
+        *   *Styling:* `LineBorder`, `EmptyBorder`, `CompoundBorder`, `MatteBorder`, `StyledDocument`, `StyleConstants`.
+        *   *Look and Feel:* Basic `UIManager` usage (attempting Nimbus).
+    *   **Java AWT (Abstract Window Toolkit):**
+        *   *Core Classes:* `Color`, `Dimension`, `Font`, `Graphics`, `Graphics2D`, `Point`, `Insets`.
+        *   *Event Model Foundation.*
 *   **Core Java SE Libraries:**
-    *   **Java Collections Framework:** `List`, `Map`, `Set`, `ArrayList`, `HashMap`, `HashSet`, `LinkedHashMap`, `LinkedList`, `Comparator` for managing simulation data structures.
-    *   **Java Concurrency Utilities:** `SwingWorker`, `ExecutionException` for managing background operations without freezing the GUI.
-    *   **Java Date/Time:** `Date`, `SimpleDateFormat` for timestamping log entries.
-    *   **Java Streams API:** Used for data manipulation like filtering (`stream().filter().collect()`).
+    *   **Java Collections Framework:** `List`, `Map`, `Set`, `ArrayList`, `HashMap`, `HashSet`, `LinkedHashMap`, `LinkedList`, `Comparator`.
+    *   **Java Concurrency Utilities:** `SwingWorker`, `ExecutionException`.
+    *   **Java Date/Time:** `Date`, `SimpleDateFormat`.
+    *   **Java Streams API:** Used for filtering/data manipulation.
     *   **Standard Utilities:** `Random`, `Math`.
+*   **Packaging:**
+    *   **JAR (Java Archive):** The application is distributed as an executable `.jar` file.
+
+**2. Download Webpage:**
+
+*   **Structure:**
+    *   **HTML5:** Used for the basic structure of the download page.
+*   **Styling:**
+    *   **CSS3:** Used for basic presentation and styling of the download page elements (button, text).
 
 ## Key Code Concepts ✨
 
