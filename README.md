@@ -1,7 +1,7 @@
 # OSproject
 # Hybrid Virtual Memory Manager Simulation
 
-A dynamic, web-based visual simulator demonstrating the principles of a hybrid virtual memory system, including Cache, RAM (Main Memory), and Swap Space, complete with various page replacement algorithms.
+A web-based visual simulator demonstrating concepts of a hybrid virtual memory system, including Cache, RAM, Swap Space, priority-based page replacement algorithms, dirty bit handling, and thrashing detection, all presented with a modern, interactive UI.
 
 ## 🚀 Live Demo & Screenshot
 
