@@ -104,9 +104,29 @@ This is a purely front-end application built with standard web technologies. No 
 
 ## Technology Stack 💻
 
-*   **HTML5:** Structure and content.
-*   **CSS3:** Styling, layout (Flexbox), animations, and theming (CSS Variables).
-*   **JavaScript (ES6+):** Core logic, DOM manipulation, event handling, algorithm implementation.
+This application is built primarily using the Java SE platform and its standard libraries, with a focus on the Swing GUI toolkit.
+
+*   **Core Language:**
+    *   **Java:** The fundamental programming language used (likely Java 8+ due to the use of Streams and Lambdas).
+*   **GUI Framework:**
+    *   **Java Swing:** The primary framework for building the graphical user interface.
+        *   Core Components: `JFrame`, `JPanel`, `JButton`, `JLabel`, `JSpinner`, `JComboBox`, `JTextPane`, `JProgressBar`, `JScrollPane`, `JDialog`, `JLayeredPane`.
+        *   Layout Managers: `BorderLayout`, `FlowLayout`, `GridLayout`, `BoxLayout`.
+        *   Event Handling: `ActionListener`, `MouseAdapter`, `ComponentAdapter` for user interaction and component events.
+        *   Custom Painting: Overriding `paintComponent` with `Graphics2D` for custom block appearance, gradients (`GradientPaint`), and transparency (`AlphaComposite`).
+        *   Threading: `SwingUtilities.invokeLater` for EDT safety, `SwingWorker` for background tasks and animations, `javax.swing.Timer` for animation scheduling.
+        *   Borders: `LineBorder`, `EmptyBorder`, `CompoundBorder`, `MatteBorder` for component styling.
+        *   Styled Text: `StyledDocument` and `StyleConstants` for coloring/styling text in the `JTextPane` log.
+        *   Look and Feel: Basic usage of `UIManager` to attempt setting the Nimbus Look and Feel.
+    *   **Java AWT (Abstract Window Toolkit):** The underlying toolkit used by Swing.
+        *   Core Classes: `Color`, `Dimension`, `Font`, `Graphics`, `Graphics2D`, `Point`, `Insets`.
+        *   Event Model: Foundation for Swing's event handling.
+*   **Core Java SE Libraries:**
+    *   **Java Collections Framework:** `List`, `Map`, `Set`, `ArrayList`, `HashMap`, `HashSet`, `LinkedHashMap`, `LinkedList`, `Comparator` for managing simulation data structures.
+    *   **Java Concurrency Utilities:** `SwingWorker`, `ExecutionException` for managing background operations without freezing the GUI.
+    *   **Java Date/Time:** `Date`, `SimpleDateFormat` for timestamping log entries.
+    *   **Java Streams API:** Used for data manipulation like filtering (`stream().filter().collect()`).
+    *   **Standard Utilities:** `Random`, `Math`.
 
 ## Key Code Concepts ✨
 
